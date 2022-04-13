@@ -177,4 +177,4 @@ class MyElement extends HTMLElement {
 
 }
 
-window.customElements.define('dropdown-multi-select', MyElement)
+window.customElements.define('dropdown-box', MyElement)
