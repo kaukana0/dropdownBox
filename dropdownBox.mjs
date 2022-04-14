@@ -1,12 +1,12 @@
 /*
-* req1 - have a dropdownbox w/ arrow in it opening/closing a list of options
-* req2 - multiselect or single select ability
-* req3 - data format: {OPT1:'Option 1'}
-* req4 - show images in front of text (image names like OPT1.png)
+* req1 (done) - have a dropdownbox w/ arrow in it opening/closing a list of options
+* req2 (done) - multiselect or single select ability
+* req3 (done) - selectbox data format: {OPT1:'Option 1'}
+* req4 (done) - show images in front of text (image names like OPT1.png)
 * req5 - show a checkmark rightmost in option if it's selected
-* req6 - scrollable w/ adjustable max size
-* req7 - get selected element(s) (their key)
-* req8 - make dropdown list topmost and not pushing down contents
+* req6 (done) - scrollable w/ adjustable max size
+* req7 (done) - get selected element(s) (their key)
+* req8 (done) - make dropdown list topmost and not pushing down contents
 * req9 - when multiselect say "N selected" or display the 1 that's selected (also w/ image same as in list)
 */
 
@@ -84,34 +84,43 @@ template.innerHTML += `<style>
 
 class MyElement extends HTMLElement {
 
-	$(elementId) {
-		return this._shadow.getElementById(elementId)
+	#_shadow
+	#_imagePath
+	#_isMultiselect
+	#_selected
+
+	#$(elementId) {
+		return this.#_shadow.getElementById(elementId)
 	}
 
 	constructor() {
 		super()
 
-		this._shadow = this.attachShadow({ mode: 'open' })
-		this._shadow.appendChild(template.content.cloneNode(true))
+		this.#_shadow = this.attachShadow({ mode: 'open' })
+		this.#_shadow.appendChild(template.content.cloneNode(true))
 
-		this.headBox = this.$(ms.id.HeadBox)
-		this.headBox.addEventListener('click', () => this.toggleVisibility())
+		this.#$(ms.id.HeadBox).addEventListener('click', () => this.#toggleVisibility())
 	}
 
 	connectedCallback() {
-		this._imagePath = this.getAttribute('imagePath') || "";
+		this.#_imagePath = this.getAttribute('imagePath') || "";
+		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false;
 	}
 
 	set data(val) {		
-		this.fill(val)
+		this.#fill(val)
 	}
 
 	set callback(val) {
 		this._callback = val
 	}
 
+	get selected() {
+		return this.#_selected
+	}
+
 	static get observedAttributes() {
-		return ['data', 'imagePath'];
+		return ['data', 'imagePath', 'multiselect'];
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -119,8 +128,8 @@ class MyElement extends HTMLElement {
 			console.warn("setting "+name+" via html attribute is being ignored. please use js property instead.")
 		}
 		if (name === 'imagePath') {
-			if(this._imagePath === undefined) {
-				this._imagePath = newVal
+			if(this.#_imagePath === undefined) {
+				this.#_imagePath = newVal
 				// todo: clear and re-fill
 			} else {
 				console.warn("setting imagePath works only one time. It's ignored now.")
@@ -131,46 +140,68 @@ class MyElement extends HTMLElement {
 	// note: the purpose of using requestAnimationFrame() here is to make sure 
 	// that an element - to which we want to attach an event - actually exists.
 	// seems that .innerHTML takes a while "asynchroneously"...
-	fill(entries) {
+	#fill(entries) {
 		Object.entries(entries).forEach(([key, val]) => {
-			this.addListItem(key, val)
-			window.requestAnimationFrame(() => this.$(ms.id.ListItemPrefix + key).onclick = (e) => this.onListItemClick(e))
+			this.#addListItem(key, val)
+			window.requestAnimationFrame(() => this.#$(ms.id.ListItemPrefix + key).onclick = (e) => this.#onListItemClick(e))
 
-			if(this._selected === undefined) {	// initially
-				this._selected = key
-				this.$(ms.id.CurrentSelectDisplay).innerHTML = val
-				this.triggerCallback(key, val)
+			if(this.#_selected === undefined) {	// initially
+				if(this.#_isMultiselect) {
+					this.#_selected = [key]
+				} else {
+					this.#_selected = key
+				}
+				this.#$(ms.id.CurrentSelectDisplay).innerHTML = val
+				this.#triggerCallback(key, val)
 			}
 		})
 	}
 
-	addListItem(key, val) {
-		const img = this._imagePath === "" ? "" : `<img src='${this._imagePath}/${key}.png'></img>`
-		this.$(ms.id.List).innerHTML += `
+	#addListItem(key, val) {
+		const img = this.#_imagePath === "" ? "" : `<img src='${this.#_imagePath}/${key}.png'></img>`
+		this.#$(ms.id.List).innerHTML += `
           <li id='${ms.id.ListItemPrefix}${key}' key='${key}' val='${val}'>
 		  	  <span>${img}
               ${val}</span>
           </li>
     `}
 
-	onListItemClick(e) {
+	#onListItemClick(e) {
 		const key = e.target.parentNode.getAttribute("key")
-		if(this._selected !== key) {	// only if selection changed
-			this._selected = key
+		const that = this
+
+		function action() {
 			const val = e.target.parentNode.getAttribute("val")
-			this.$(ms.id.CurrentSelectDisplay).innerHTML = val
-			this.triggerCallback(key, val)
+			that.#$(ms.id.CurrentSelectDisplay).innerHTML = val
+			that.#triggerCallback(key, val)
+		}
+
+		if(this.#_isMultiselect) {
+			const idx = this.#_selected.find((el)=> el === key)
+			if(idx) {
+				this.#_selected.splice(idx,1)
+			} else {
+				this.#_selected.push(key)
+			}
+			action()
+		} else {
+			if(this.#_selected !== key) {	// only if selection changed
+				this.#_selected = key
+				action()
+			} else {
+				// nop
+			}
 		}
 	}
 	
-	triggerCallback(key,val) {
+	#triggerCallback(key,val) {
 		if(this._callback !== undefined) {
 			this._callback(key, val)
 		}
 	}
 
-	toggleVisibility(e) {
-		const el = this.$(ms.id.List)
+	#toggleVisibility(e) {
+		const el = this.#$(ms.id.List)
 		el.style.display !== "block" ? 	el.style.display = "block" : el.style.display = "none"
 	}
 
