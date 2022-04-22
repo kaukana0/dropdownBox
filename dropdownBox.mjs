@@ -7,66 +7,75 @@
 * req6 (done) - scrollable w/ adjustable max size
 * req7 (done) - get selected element(s) (their key)
 * req8 (done) - make dropdown list topmost and not pushing down contents
-* req9 - when multiselect say "N selected" or display the 1 that's selected (also w/ image same as in list)
+* req9 (done) - when multiselect say "N selected" or display the 1 that's selected (also w/ image same as in list)
+* req10 - dismissive dropdown
 */
 
 // magic strings
 const ms = {
-	id: {
-		HeadBox: 'HeadBox',     // the select box (with a little down arrow inside)
-		List: 'DropdownList',           // list below the box; initially invisible
-		ListItemPrefix: 'ListItem',
-		CurrentSelectDisplay: 'currentSelectDisplay'
+	domElementIds: {
+		headBox: 'headBox',     				// the select box (with a little down arrow inside)
+		headBoxContent: 'headBoxContent',		// mostly the same as a list entry (text and possibly image)
+		list: 'DropdownList',           		// list below the box; initially invisible
+		listItemPrefix: 'ListItem',
+		spacer: 'spacer'
 	},
 }
 
 const template = document.createElement('template');
 
 template.innerHTML = `
-  <div id='${ms.id.HeadBox}' style="position:relative;">
-    <div id='${ms.id.CurrentSelectDisplay}'>&varnothing;</div>
-	<ul id='${ms.id.List}' style="display: none;"></ul>
-  </div>
+<div id='${ms.domElementIds.headBox}'>
+  <div id='${ms.domElementIds.headBoxContent}'>&varnothing;</div>
+  <div id='${ms.domElementIds.spacer}'></div>
+  <ul id='${ms.domElementIds.list}'></ul>
+</div>
 `
 
 
 template.innerHTML += `<style>
 
-#${ms.id.HeadBox} {
-	width: 196px;
+#${ms.domElementIds.headBox} {
+	position:relative;
+	display: flex;
 	border: 1px solid rgba(0,0,0,.15);
-	text-align: left;
+    cursor: pointer;
 }
 
-#${ms.id.CurrentSelectDisplay} {
-	display: inline-block;
-	margin: 0.1em;
-	padding: 0.1em;
+
+#${ms.domElementIds.headBoxContent} {
+	height: 2em;
+	overflow: clip;
 }
 
-/* this is bootstrap's CSS triangle */
-#${ms.id.CurrentSelectDisplay}::after {
-    display: inline-block;
-    margin-left: 0.255em;
-    vertical-align: 0.255em;
-    content: "";
+#${ms.domElementIds.spacer} {
+	flex-grow: 1;
+}
+
+/* this is bootstrap's CSS triangle; only positionable here via margin */
+#${ms.domElementIds.headBox}:after {
+	content: "";
     border-top: 0.3em solid;
     border-right: 0.3em solid transparent;
     border-bottom: 0;
     border-left: 0.3em solid transparent;
+
+	margin-right: 0.255em;
+    margin-top: 0.75em;
 }
 
-#${ms.id.List} {
+#${ms.domElementIds.list} {
+	display: none;
+
 	list-style: none;
 	background-color: #fff;
 	overflow: auto;
 	border: 1px solid rgba(0,0,0,.15);
 	z-index: 20;
 
-	width: 196px;
+	//height: 300px;
     max-height: 400px;
-    top: 0.5em;
-    cursor: pointer;
+    top: 0.55em;
     margin-left: 0px;
     margin-right: 0px;
 	padding-left: 0px;
@@ -74,8 +83,8 @@ template.innerHTML += `<style>
 	text-align: left;
 }
 
-#${ms.id.List} li:hover {
-    background-color: #000;
+#${ms.domElementIds.list} li:hover {
+    background-color: #009;
     color: white;
 }
 
@@ -84,22 +93,22 @@ template.innerHTML += `<style>
 
 class MyElement extends HTMLElement {
 
-	#_shadow
 	#_imagePath
 	#_isMultiselect
-	#_selected
+	#_selected		// [{key:val}]
+	#_callback		// function
 
 	#$(elementId) {
-		return this.#_shadow.getElementById(elementId)
+		return this.shadowRoot.getElementById(elementId)
 	}
 
 	constructor() {
 		super()
 
-		this.#_shadow = this.attachShadow({ mode: 'open' })
-		this.#_shadow.appendChild(template.content.cloneNode(true))
+		this.attachShadow({ mode: 'open' })
+		this.shadowRoot.appendChild(template.content.cloneNode(true))
 
-		this.#$(ms.id.HeadBox).addEventListener('click', () => this.#toggleVisibility())
+		this.#$(ms.domElementIds.headBox).addEventListener('click', () => this.#toggleVisibility())
 	}
 
 	connectedCallback() {
@@ -112,11 +121,15 @@ class MyElement extends HTMLElement {
 	}
 
 	set callback(val) {
-		this._callback = val
+		this.#_callback = val
 	}
 
 	get selected() {
 		return this.#_selected
+	}
+
+	get selectedKeys() {
+		return this.#_selected.map((el) => Object.keys(el)[0]);
 	}
 
 	static get observedAttributes() {
@@ -143,50 +156,65 @@ class MyElement extends HTMLElement {
 	#fill(entries) {
 		Object.entries(entries).forEach(([key, val]) => {
 			this.#addListItem(key, val)
-			window.requestAnimationFrame(() => this.#$(ms.id.ListItemPrefix + key).onclick = (e) => this.#onListItemClick(e))
+			const elId = ms.domElementIds.listItemPrefix + key
+			window.requestAnimationFrame(() => this.#$(elId).onclick = () => this.#onListItemClick(key, val))
 
 			if(this.#_selected === undefined) {	// initially
-				if(this.#_isMultiselect) {
-					this.#_selected = [key]
-				} else {
-					this.#_selected = key
-				}
-				this.#$(ms.id.CurrentSelectDisplay).innerHTML = val
-				this.#triggerCallback(key, val)
+				this.#_selected = [{[key]:val}]
+				//this.#$(ms.domElementIds.headBoxContent).innerHTML = `<p style="display:inline-block; width=80px; font-stretch:100%; text-size-adjust:100%">${val}</p>`
+				this.#$(ms.domElementIds.headBoxContent).innerHTML = val
+				this.#invokeCallback(key, val)
 			}
 		})
 	}
 
 	#addListItem(key, val) {
 		const img = this.#_imagePath === "" ? "" : `<img src='${this.#_imagePath}/${key}.png'></img>`
-		this.#$(ms.id.List).innerHTML += `
-          <li id='${ms.id.ListItemPrefix}${key}' key='${key}' val='${val}'>
+		this.#$(ms.domElementIds.list).innerHTML += `
+          <li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}'>
 		  	  <span>${img}
               ${val}</span>
           </li>
     `}
 
-	#onListItemClick(e) {
-		const key = e.target.parentNode.getAttribute("key")
+	#updateHeadBoxContent() {
+		const selectedCount = this.#_selected.length
+		let html = "&varnothing;"
+
+		if(selectedCount === 1) {	// the case for singleselect OR multiselect w/ 1 element
+			const valOf1stElement = Object.values(this.#_selected[0])[0]
+			html = valOf1stElement
+		} else {
+			html = `${selectedCount} selected`	// TODO: translate
+		}
+		this.#$(ms.domElementIds.headBoxContent).innerHTML = html
+	}
+
+	#onListItemClick(key, val) {
 		const that = this
 
 		function action() {
-			const val = e.target.parentNode.getAttribute("val")
-			that.#$(ms.id.CurrentSelectDisplay).innerHTML = val
-			that.#triggerCallback(key, val)
+			that.#updateHeadBoxContent()
+			that.#invokeCallback(key, val)
 		}
 
 		if(this.#_isMultiselect) {
-			const idx = this.#_selected.find((el)=> el === key)
-			if(idx) {
-				this.#_selected.splice(idx,1)
+			const idx = this.#_selected.findIndex((el)=> Object.keys(el)[0] === key)
+			const found = idx > -1
+			if(found) {
+				if(this.#_selected.length > 1) {
+					this.#_selected.splice(idx,1)	// remove
+					action()
+				} else {
+					// nop (at least 1 has to be selected at all times)
+				}
 			} else {
-				this.#_selected.push(key)
+				this.#_selected.push({[key]:val})
+				action()
 			}
-			action()
-		} else {
-			if(this.#_selected !== key) {	// only if selection changed
-				this.#_selected = key
+		} else {	// single select logic
+			if(this.#_selected[0] !== {[key]:val}) {	// only if selection changed
+				this.#_selected[0] = {[key]:val}
 				action()
 			} else {
 				// nop
@@ -194,14 +222,14 @@ class MyElement extends HTMLElement {
 		}
 	}
 	
-	#triggerCallback(key,val) {
-		if(this._callback !== undefined) {
-			this._callback(key, val)
+	#invokeCallback(key,val) {
+		if(this.#_callback !== undefined) {
+			this.#_callback(key, val)
 		}
 	}
 
 	#toggleVisibility(e) {
-		const el = this.#$(ms.id.List)
+		const el = this.#$(ms.domElementIds.list)
 		el.style.display !== "block" ? 	el.style.display = "block" : el.style.display = "none"
 	}
 
