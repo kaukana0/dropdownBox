@@ -3,12 +3,12 @@
 * req2 (done) - multiselect or single select ability
 * req3 (done) - selectbox data format: {OPT1:'Option 1'}
 * req4 (done) - show images in front of text (image names like OPT1.png)
-* req5 - show a checkmark rightmost in option if it's selected
+* req5 (done) - show a checkmark rightmost in option if it's selected
 * req6 (done) - scrollable w/ adjustable max size
 * req7 (done) - get selected element(s) (their key)
 * req8 (done) - make dropdown list topmost and not pushing down contents
 * req9 (done) - when multiselect say "N selected" or display the 1 that's selected (also w/ image same as in list)
-* req10 - dismissive dropdown
+* req10 - dismissible dropdown
 */
 
 // magic strings
@@ -40,12 +40,17 @@ template.innerHTML += `<style>
 	display: flex;
 	border: 1px solid rgba(0,0,0,.15);
     cursor: pointer;
+	height: 2em;
+	align-items: center;
 }
 
 
 #${ms.domElementIds.headBoxContent} {
-	height: 2em;
-	overflow: clip;
+	height: 1.8em;
+	overflow: hidden;
+	margin-top: 0.3em;
+	margin-left: 0.3em;
+	text-align: left;
 }
 
 #${ms.domElementIds.spacer} {
@@ -59,23 +64,18 @@ template.innerHTML += `<style>
     border-right: 0.3em solid transparent;
     border-bottom: 0;
     border-left: 0.3em solid transparent;
-
 	margin-right: 0.255em;
-    margin-top: 0.75em;
 }
 
 #${ms.domElementIds.list} {
 	display: none;
-
 	list-style: none;
 	background-color: #fff;
 	overflow: auto;
 	border: 1px solid rgba(0,0,0,.15);
 	z-index: 20;
-
-	//height: 300px;
     max-height: 400px;
-    top: 0.55em;
+    top: 1em;
     margin-left: 0px;
     margin-right: 0px;
 	padding-left: 0px;
@@ -86,6 +86,21 @@ template.innerHTML += `<style>
 #${ms.domElementIds.list} li:hover {
     background-color: #009;
     color: white;
+}
+
+[dropdown-item-checked]:after {
+	position: absolute;
+	right: 0.8rem;
+	margin-top: 1px;
+	content: '';
+	width: 6px;
+	height: 12px;
+	border-bottom: 3px solid #333;
+	border-right: 3px solid #333;
+	transform: rotate(45deg);
+	-o-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	-webkit-transform: rotate(45deg);
 }
 
 </style>`
@@ -151,18 +166,22 @@ class MyElement extends HTMLElement {
 	}
 
 	// note: the purpose of using requestAnimationFrame() here is to make sure 
-	// that an element - to which we want to attach an event - actually exists.
+	// that an element - which we want to access - actually exists.
 	// seems that .innerHTML takes a while "asynchroneously"...
 	#fill(entries) {
 		Object.entries(entries).forEach(([key, val]) => {
 			this.#addListItem(key, val)
 			const elId = ms.domElementIds.listItemPrefix + key
-			window.requestAnimationFrame(() => this.#$(elId).onclick = () => this.#onListItemClick(key, val))
-
-			if(this.#_selected === undefined) {	// initially
+			window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
+				this.#onListItemClick(key, val)
+			})
+			
+			if(this.#_selected === undefined) {	// initially (1st element)
 				this.#_selected = [{[key]:val}]
-				//this.#$(ms.domElementIds.headBoxContent).innerHTML = `<p style="display:inline-block; width=80px; font-stretch:100%; text-size-adjust:100%">${val}</p>`
 				this.#$(ms.domElementIds.headBoxContent).innerHTML = val
+				if(this.#_isMultiselect) {
+					this.#$(elId).setAttribute("dropdown-item-checked","")
+				}
 				this.#invokeCallback(key, val)
 			}
 		})
@@ -198,18 +217,22 @@ class MyElement extends HTMLElement {
 			that.#invokeCallback(key, val)
 		}
 
+		const elId = ms.domElementIds.listItemPrefix + key
+
 		if(this.#_isMultiselect) {
 			const idx = this.#_selected.findIndex((el)=> Object.keys(el)[0] === key)
 			const found = idx > -1
 			if(found) {
 				if(this.#_selected.length > 1) {
 					this.#_selected.splice(idx,1)	// remove
+					this.#$(elId).removeAttribute("dropdown-item-checked")
 					action()
 				} else {
 					// nop (at least 1 has to be selected at all times)
 				}
 			} else {
 				this.#_selected.push({[key]:val})
+				this.#$(elId).setAttribute("dropdown-item-checked","")
 				action()
 			}
 		} else {	// single select logic
