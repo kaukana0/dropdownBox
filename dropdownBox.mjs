@@ -9,6 +9,7 @@
 * req8 (done) - make dropdown list topmost and not pushing down contents
 * req9 (done) - when multiselect say "N selected" or display the 1 that's selected (also w/ image same as in list)
 * req10 - dismissible dropdown
+* req11 - image in the headerbox
 */
 
 // magic strings
@@ -75,10 +76,12 @@ template.innerHTML += `<style>
 	border: 1px solid rgba(0,0,0,.15);
 	z-index: 20;
     max-height: 400px;
-    top: 1em;
+    top: 1.1em;
     margin-left: 0px;
     margin-right: 0px;
-	padding-left: 0px;
+	padding-left: 0.3em;
+	left: -1px;
+	width: 98%;
     position: absolute;
 	text-align: left;
 }
