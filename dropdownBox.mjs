@@ -2,14 +2,16 @@
 * req1 (done) - have a dropdownbox w/ arrow in it opening/closing a list of options
 * req2 (done) - multiselect or single select ability
 * req3 (done) - selectbox data format: {OPT1:'Option 1'}
-* req4 (done) - show images in front of text (image names like OPT1.png)
+* req4 (done) - show images in front of text (convention: image names like OPT1.png)
 * req5 (done) - show a checkmark rightmost in option if it's selected
 * req6 (done) - scrollable w/ adjustable max size
 * req7 (done) - get selected element(s) (their key)
-* req8 (done) - make dropdown list topmost and not pushing down contents
-* req9 (done) - when multiselect say "N selected" or display the 1 that's selected (also w/ image same as in list)
-* req10 - dismissible dropdown
+* req8 (done) - make dropdown list topmost and not pushing down page contents
+* req9 (done) - when multiselect say "N selected" or display the 1 that's selected
+* req10 (done) - dismissible dropdown
 * req11 - image in the headerbox
+* req12 - layout details (sizes, font, padding etc)
+* req13 - accessibility: tab behaviour
 */
 
 // magic strings
@@ -39,17 +41,18 @@ template.innerHTML += `<style>
 #${ms.domElementIds.headBox} {
 	position:relative;
 	display: flex;
-	border: 1px solid rgba(0,0,0,.15);
+	border: 1px solid rgba(0,0,0,1);
     cursor: pointer;
 	height: 2em;
 	align-items: center;
+	padding: 0.3em;
 }
 
 
 #${ms.domElementIds.headBoxContent} {
 	height: 1.8em;
 	overflow: hidden;
-	margin-top: 0.3em;
+	margin-top: 0.4em;
 	margin-left: 0.3em;
 	text-align: left;
 }
@@ -76,7 +79,7 @@ template.innerHTML += `<style>
 	border: 1px solid rgba(0,0,0,.15);
 	z-index: 20;
     max-height: 400px;
-    top: 1.1em;
+    top: 1.7em;
     margin-left: 0px;
     margin-right: 0px;
 	padding-left: 0.3em;
@@ -84,6 +87,11 @@ template.innerHTML += `<style>
 	width: 98%;
     position: absolute;
 	text-align: left;
+}
+
+li {
+	padding-left: 0.3em;
+	margin: 0.4em;
 }
 
 #${ms.domElementIds.list} li:hover {
@@ -127,6 +135,12 @@ class MyElement extends HTMLElement {
 		this.shadowRoot.appendChild(template.content.cloneNode(true))
 
 		this.#$(ms.domElementIds.headBox).addEventListener('click', () => this.#toggleVisibility())
+
+		document.addEventListener('click', (e) => {		// dismissable
+			if(e.target.id != this.id) {
+				this.#hide()
+			}
+		})
 	}
 
 	connectedCallback() {
@@ -254,9 +268,14 @@ class MyElement extends HTMLElement {
 		}
 	}
 
-	#toggleVisibility(e) {
+	#toggleVisibility() {
 		const el = this.#$(ms.domElementIds.list)
 		el.style.display !== "block" ? 	el.style.display = "block" : el.style.display = "none"
+	}
+
+	#hide() {
+		const el = this.#$(ms.domElementIds.list)
+		el.style.display = "none"
 	}
 
 
