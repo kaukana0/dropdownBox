@@ -117,7 +117,7 @@ li {
 </style>`
 
 
-class MyElement extends HTMLElement {
+class Element extends HTMLElement {
 
 	#_imagePath
 	#_isMultiselect
@@ -270,7 +270,11 @@ class MyElement extends HTMLElement {
 
 	#toggleVisibility() {
 		const el = this.#$(ms.domElementIds.list)
-		el.style.display !== "block" ? 	el.style.display = "block" : el.style.display = "none"
+		if(this.#_isMultiselect) {
+			el.style.display !== "block" ? 	el.style.display = "block" : el.style.display
+		} else {
+			el.style.display !== "block" ? 	el.style.display = "block" : el.style.display = "none"
+		}
 	}
 
 	#hide() {
@@ -281,4 +285,4 @@ class MyElement extends HTMLElement {
 
 }
 
-window.customElements.define('dropdown-box', MyElement)
+window.customElements.define('dropdown-box', Element)
