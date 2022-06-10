@@ -123,6 +123,7 @@ class Element extends HTMLElement {
 	#_isMultiselect
 	#_selected		// [{key:val}]
 	#_callback		// function
+	#_currentText
 
 	#$(elementId) {
 		return this.shadowRoot.getElementById(elementId)
@@ -160,6 +161,10 @@ class Element extends HTMLElement {
 		return this.#_selected
 	}
 
+	get currentText() {
+		return this.#_currentText
+	}
+
 	get selectedKeys() {
 		return this.#_selected.map((el) => Object.keys(el)[0]);
 	}
@@ -185,23 +190,23 @@ class Element extends HTMLElement {
 	// note: the purpose of using requestAnimationFrame() here is to make sure 
 	// that an element - which we want to access - actually exists.
 	// seems that .innerHTML takes a while "asynchroneously"...
-	#fill(entries) {
-		Object.entries(entries).forEach(([key, val]) => {
+	#fill(itemsMap) {
+		for (const [key, val] of itemsMap.entries()) {
 			this.#addListItem(key, val)
 			const elId = ms.domElementIds.listItemPrefix + key
 			window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
 				this.#onListItemClick(key, val)
 			})
-			
+
 			if(this.#_selected === undefined) {	// initially (1st element)
 				this.#_selected = [{[key]:val}]
-				this.#$(ms.domElementIds.headBoxContent).innerHTML = val
+				this.#updateHeadBoxContent()
 				if(this.#_isMultiselect) {
 					this.#$(elId).setAttribute("dropdown-item-checked","")
 				}
 				this.#invokeCallback(key, val)
 			}
-		})
+		}
 	}
 
 	#addListItem(key, val) {
@@ -223,6 +228,7 @@ class Element extends HTMLElement {
 		} else {
 			html = `${selectedCount} selected`	// TODO: translate
 		}
+		this.#_currentText = html
 		this.#$(ms.domElementIds.headBoxContent).innerHTML = html
 	}
 
@@ -265,6 +271,8 @@ class Element extends HTMLElement {
 	#invokeCallback(key,val) {
 		if(this.#_callback !== undefined) {
 			this.#_callback(key, val)
+		} else {
+			console.warn("dropDownBox: No callback")
 		}
 	}
 
