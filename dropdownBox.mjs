@@ -91,12 +91,20 @@ template.innerHTML += `<style>
 
 li {
 	padding-left: 0.3em;
-	margin: 0.4em;
+	/* margin: 0.4em; */
+	padding-top: 0.3em;
+	/* padding-bottom: 0.2em; */
+	vertical-align: middle;
 }
 
 #${ms.domElementIds.list} li:hover {
-    background-color: #009;
-    color: white;
+    background-color: #CCC;
+    color: black;
+}
+
+[dropdown-item-checked] {
+    background-color: #044aa3;
+    color: #BBB;
 }
 
 [dropdown-item-checked]:after {
@@ -106,8 +114,8 @@ li {
 	content: '';
 	width: 6px;
 	height: 12px;
-	border-bottom: 3px solid #333;
-	border-right: 3px solid #333;
+	border-bottom: 3px solid #666;
+	border-right: 3px solid #666;
 	transform: rotate(45deg);
 	-o-transform: rotate(45deg);
 	-ms-transform: rotate(45deg);
@@ -149,8 +157,8 @@ class Element extends HTMLElement {
 		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false;
 	}
 
-	set data(val) {		
-		this.#fill(val)
+	set data(val) {
+		this.#fill(val[0], val[1])
 	}
 
 	set callback(val) {
@@ -190,7 +198,7 @@ class Element extends HTMLElement {
 	// note: the purpose of using requestAnimationFrame() here is to make sure 
 	// that an element - which we want to access - actually exists.
 	// seems that .innerHTML takes a while "asynchroneously"...
-	#fill(itemsMap) {
+	#fill(itemsMap, groupChanges) {
 		for (const [key, val] of itemsMap.entries()) {
 			this.#addListItem(key, val)
 			const elId = ms.domElementIds.listItemPrefix + key
@@ -206,6 +214,10 @@ class Element extends HTMLElement {
 				}
 				this.#invokeCallback(key, val)
 			}
+
+			if(groupChanges && groupChanges.includes(key)) {
+				this.#addSeparator()
+			}
 		}
 	}
 
@@ -217,6 +229,13 @@ class Element extends HTMLElement {
               ${val}</span>
           </li>
     `}
+
+	#addSeparator() {
+		this.#$(ms.domElementIds.list).innerHTML += `
+          <li>
+		  	  <hr>
+          </li>
+	`}
 
 	#updateHeadBoxContent() {
 		const selectedCount = this.#_selected.length
