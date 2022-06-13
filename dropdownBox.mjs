@@ -25,7 +25,7 @@ const ms = {
 	},
 }
 
-const template = document.createElement('template');
+const template = document.createElement('template')
 
 template.innerHTML = `
 <div id='${ms.domElementIds.headBox}'>
@@ -153,8 +153,8 @@ class Element extends HTMLElement {
 	}
 
 	connectedCallback() {
-		this.#_imagePath = this.getAttribute('imagePath') || "";
-		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false;
+		this.#_imagePath = this.getAttribute('imagePath') || ""
+		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
 	}
 
 	set data(val) {
@@ -163,6 +163,14 @@ class Element extends HTMLElement {
 
 	set callback(val) {
 		this.#_callback = val
+	}
+
+	set selectedText(val) {
+		this.setAttribute('selectedText', val)
+	}
+
+	get selectedText() {
+		return this.getAttribute('selectedText')
 	}
 
 	get selected() {
@@ -174,11 +182,11 @@ class Element extends HTMLElement {
 	}
 
 	get selectedKeys() {
-		return this.#_selected.map((el) => Object.keys(el)[0]);
+		return this.#_selected.map((el) => Object.keys(el)[0])
 	}
 
 	static get observedAttributes() {
-		return ['data', 'imagePath', 'multiselect'];
+		return ['data', 'imagePath']
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -245,7 +253,7 @@ class Element extends HTMLElement {
 			const valOf1stElement = Object.values(this.#_selected[0])[0]
 			html = valOf1stElement
 		} else {
-			html = `${selectedCount} selected`	// TODO: translate
+			html = `${selectedCount} ${this.getAttribute('selectedText') || "selected"}`
 		}
 		this.#_currentText = html
 		this.#$(ms.domElementIds.headBoxContent).innerHTML = html
