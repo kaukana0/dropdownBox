@@ -132,6 +132,7 @@ class Element extends HTMLElement {
 	#_selected		// [{key:val}]
 	#_callback		// function
 	#_currentText
+	#_maxSelections
 
 	#$(elementId) {
 		return this.shadowRoot.getElementById(elementId)
@@ -139,6 +140,8 @@ class Element extends HTMLElement {
 
 	constructor() {
 		super()
+
+		this.#_maxSelections = 10
 
 		this.attachShadow({ mode: 'open' })
 		this.shadowRoot.appendChild(template.content.cloneNode(true))
@@ -155,6 +158,7 @@ class Element extends HTMLElement {
 	connectedCallback() {
 		this.#_imagePath = this.getAttribute('imagePath') || ""
 		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
+		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 100
 	}
 
 	set data(val) {
@@ -281,9 +285,13 @@ class Element extends HTMLElement {
 					// nop (at least 1 has to be selected at all times)
 				}
 			} else {
-				this.#_selected.push({[key]:val})
-				this.#$(elId).setAttribute("dropdown-item-checked","")
-				action()
+				if(this.#_selected.length < this.#_maxSelections) {
+					this.#_selected.push({[key]:val})
+					this.#$(elId).setAttribute("dropdown-item-checked","")
+					action()
+				} else {
+					// max number of selectable items reached
+				}
 			}
 		} else {	// single select logic
 			if(this.#_selected[0] !== {[key]:val}) {	// only if selection changed
