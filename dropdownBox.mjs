@@ -9,8 +9,8 @@
 * req8 (done) - make dropdown list topmost and not pushing down page contents
 * req9 (done) - when multiselect say "N selected" or display the 1 that's selected
 * req10 (done) - dismissible dropdown
-* req11 - image in the headerbox
-* req12 - layout details (sizes, font, padding etc)
+* req11 (done) - image in the headerbox
+* req12  (done) - layout details (sizes, font, padding etc)
 * req13 - accessibility: tab behaviour
 */
 
@@ -90,11 +90,10 @@ template.innerHTML += `<style>
 }
 
 li {
-	padding-left: 0.3em;
-	/* margin: 0.4em; */
 	padding-top: 0.3em;
-	/* padding-bottom: 0.2em; */
-	vertical-align: middle;
+	padding-left: 0.3em;
+	padding-right: 0.3em;
+	line-height: 1.8rem;
 }
 
 #${ms.domElementIds.list} li:hover {
@@ -228,11 +227,10 @@ class Element extends HTMLElement {
 	}
 
 	#addListItem(key, val) {
-		const img = this.#_imagePath === "" ? "" : `<img src='${this.#_imagePath}/${key}.png'></img>`
+		const img = this.#_imagePath === "" ? "" : this.#getImageHtml(key)
 		this.#$(ms.domElementIds.list).innerHTML += `
           <li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}'>
-		  	  <span>${img}
-              ${val}</span>
+		  	  ${img} ${val}
           </li>
     `}
 
@@ -243,13 +241,18 @@ class Element extends HTMLElement {
           </li>
 	`}
 
+	#getImageHtml(key) {
+		return this.#_imagePath === "" ? "" : `<img src='${this.#_imagePath}/${key}.png' style="height:1.4rem; vertical-align: text-bottom;"></img>`
+	}
+
 	#updateHeadBoxContent() {
 		const selectedCount = this.#_selected.length
 		let html = "&varnothing;"
 
 		if(selectedCount === 1) {	// the case for singleselect OR multiselect w/ 1 element
-			const valOf1stElement = Object.values(this.#_selected[0])[0]
-			html = valOf1stElement
+			const val = Object.values(this.#_selected[0])[0]
+			const key = Object.keys(this.#_selected[0])[0]
+			html = this.#getImageHtml(key) + " " + val
 		} else {
 			html = `${selectedCount} ${this.getAttribute('selectedText') || "selected"}`
 		}
@@ -312,12 +315,16 @@ class Element extends HTMLElement {
 	}
 
 	#getCurrentlySingleSelectedElement() {
-		if(this.#_isMultiselect) {
-			console.warn("dropDownBox: not a single-select box")
-			return
+		if(this.#_selected) {
+			if(this.#_isMultiselect) {
+				console.warn("dropDownBox: not a single-select box")
+				return
+			} else {
+				const selecedElId = ms.domElementIds.listItemPrefix + Object.keys(this.#_selected[0])[0]
+				return this.#$(selecedElId)
+			}
 		} else {
-			const selecedElId = ms.domElementIds.listItemPrefix + Object.keys(this.#_selected[0])[0]
-			return this.#$(selecedElId)
+			return
 		}
 	}
 
@@ -341,7 +348,8 @@ class Element extends HTMLElement {
 			isCurrentlyVisible ? list.style.display = "block" : list.style.display = "none"
 
 			if(!this.#_isMultiselect && isCurrentlyVisible) {
-				this.#getCurrentlySingleSelectedElement().scrollIntoView()
+				const selEl = this.#getCurrentlySingleSelectedElement()
+				if(selEl) { selEl.scrollIntoView() }
 				// note: the list stores where it was last scrolled to.
 				// so, if for instance, you select the first item and scroll all the way down,
 				// without this, it would stay down, with this, it's scrolled topmost
