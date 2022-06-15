@@ -146,13 +146,9 @@ class Element extends HTMLElement {
 		this.attachShadow({ mode: 'open' })
 		this.shadowRoot.appendChild(template.content.cloneNode(true))
 
-		this.#$(ms.domElementIds.headBox).addEventListener('click', () => this.#toggleVisibility())
+		this.#$(ms.domElementIds.headBox).addEventListener('click', (el) => this.#toggleVisibility(el))
 
-		document.addEventListener('click', (e) => {		// dismissable
-			if(e.target.id != this.id) {
-				this.#hide()
-			}
-		})
+		this.#makeDismissable()
 	}
 
 	connectedCallback() {
@@ -190,7 +186,7 @@ class Element extends HTMLElement {
 	}
 
 	static get observedAttributes() {
-		return ['data', 'imagePath']
+		return ['data', 'callback', 'imagePath']
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -221,9 +217,7 @@ class Element extends HTMLElement {
 			if(this.#_selected === undefined) {	// initially (1st element)
 				this.#_selected = [{[key]:val}]
 				this.#updateHeadBoxContent()
-				if(this.#_isMultiselect) {
-					this.#$(elId).setAttribute("dropdown-item-checked","")
-				}
+				this.#$(elId).setAttribute("dropdown-item-checked","")
 				this.#invokeCallback(key, val)
 			}
 
@@ -286,7 +280,7 @@ class Element extends HTMLElement {
 				}
 			} else {
 				if(this.#_selected.length < this.#_maxSelections) {
-					this.#_selected.push({[key]:val})
+					this.#_selected.push({[key]:val})	// add
 					this.#$(elId).setAttribute("dropdown-item-checked","")
 					action()
 				} else {
@@ -294,8 +288,14 @@ class Element extends HTMLElement {
 				}
 			}
 		} else {	// single select logic
-			if(this.#_selected[0] !== {[key]:val}) {	// only if selection changed
+			const selectionChanged = this.#_selected[0] !== {[key]:val}
+			if(selectionChanged) {
+				// deselect current
+				this.#getCurrentlySingleSelectedElement().removeAttribute("dropdown-item-checked")
+				// memorize and select new one
 				this.#_selected[0] = {[key]:val}
+				this.#$(elId).setAttribute("dropdown-item-checked","")
+
 				action()
 			} else {
 				// nop
@@ -311,18 +311,54 @@ class Element extends HTMLElement {
 		}
 	}
 
-	#toggleVisibility() {
-		const el = this.#$(ms.domElementIds.list)
+	#getCurrentlySingleSelectedElement() {
 		if(this.#_isMultiselect) {
-			el.style.display !== "block" ? 	el.style.display = "block" : el.style.display
+			console.warn("dropDownBox: not a single-select box")
+			return
 		} else {
-			el.style.display !== "block" ? 	el.style.display = "block" : el.style.display = "none"
+			const selecedElId = ms.domElementIds.listItemPrefix + Object.keys(this.#_selected[0])[0]
+			return this.#$(selecedElId)
 		}
 	}
 
-	#hide() {
-		const el = this.#$(ms.domElementIds.list)
-		el.style.display = "none"
+	#toggleVisibility(el) {
+		let toggle
+		if(this.#_isMultiselect) {
+			if(el.target.id === ms.domElementIds.headBox) {
+				toggle = true
+			} else {
+				// stay open when selected sth from list
+				toggle = false
+			}
+		} else {
+			// close when clicked on head or selected sth from list
+			toggle = true
+		}
+		if(toggle) {
+			const list = this.#$(ms.domElementIds.list)
+			const isCurrentlyVisible = list.style.display !== "block"
+
+			isCurrentlyVisible ? list.style.display = "block" : list.style.display = "none"
+
+			if(!this.#_isMultiselect && isCurrentlyVisible) {
+				this.#getCurrentlySingleSelectedElement().scrollIntoView()
+				// note: the list stores where it was last scrolled to.
+				// so, if for instance, you select the first item and scroll all the way down,
+				// without this, it would stay down, with this, it's scrolled topmost
+			}
+		}
+
+		// note: clicks anywhere else other than this component are handled under dismissability
+	}
+
+	#makeDismissable() {
+		// note: use element in light DOM, not any element from inside this component
+		document.addEventListener('click', (e) => {
+			if(e.target.id != this.id) {
+				const el = this.#$(ms.domElementIds.list)
+				el.style.display = "none"
+			}
+		})
 	}
 
 
