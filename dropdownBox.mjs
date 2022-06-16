@@ -11,7 +11,7 @@
 * req10 (done) - dismissible dropdown
 * req11 (done) - image in the headerbox
 * req12  (done) - layout details (sizes, font, padding etc)
-* req13 - accessibility: tab behaviour
+* req13 (done) - accessibility: tab behaviour
 */
 
 // magic strings
@@ -28,7 +28,7 @@ const ms = {
 const template = document.createElement('template')
 
 template.innerHTML = `
-<div id='${ms.domElementIds.headBox}'>
+<div id='${ms.domElementIds.headBox}' tabindex="0">
   <div id='${ms.domElementIds.headBoxContent}'>&varnothing;</div>
   <div id='${ms.domElementIds.spacer}'></div>
   <ul id='${ms.domElementIds.list}'></ul>
@@ -143,9 +143,20 @@ class Element extends HTMLElement {
 		this.#_maxSelections = 10
 
 		this.attachShadow({ mode: 'open' })
-		this.shadowRoot.appendChild(template.content.cloneNode(true))
+		const tmp = template.content.cloneNode(true)
+		this.shadowRoot.appendChild(tmp)
 
 		this.#$(ms.domElementIds.headBox).addEventListener('click', (el) => this.#toggleVisibility(el))
+		this.#$(ms.domElementIds.headBox).addEventListener('keydown', (e) => {
+			if(e.keyCode == 13 || e.keyCode == 32) {
+				this.#toggleVisibility(e)
+			}
+			if(e.keyCode == 27) {
+				this.#$(ms.domElementIds.list).style.display = "none"
+			}
+		})
+		//this.#$(ms.domElementIds.headBox).addEventListener('focusout', (e) => {
+		//})
 
 		this.#makeDismissable()
 	}
@@ -212,6 +223,11 @@ class Element extends HTMLElement {
 			window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
 				this.#onListItemClick(key, val)
 			})
+			window.requestAnimationFrame(() => this.#$(elId).onkeydown = (e) => {
+				if(e.keyCode==13) {
+					this.#onListItemClick(key, val)
+				}
+			})
 
 			if(this.#_selected === undefined) {	// initially (1st element)
 				this.#_selected = [{[key]:val}]
@@ -229,17 +245,14 @@ class Element extends HTMLElement {
 	#addListItem(key, val) {
 		const img = this.#_imagePath === "" ? "" : this.#getImageHtml(key)
 		this.#$(ms.domElementIds.list).innerHTML += `
-          <li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}'>
+          <li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}' tabindex="0">
 		  	  ${img} ${val}
           </li>
     `}
 
 	#addSeparator() {
-		this.#$(ms.domElementIds.list).innerHTML += `
-          <li>
-		  	  <hr>
-          </li>
-	`}
+		this.#$(ms.domElementIds.list).innerHTML += `<hr>`
+	}
 
 	#getImageHtml(key) {
 		return this.#_imagePath === "" ? "" : `<img src='${this.#_imagePath}/${key}.png' style="height:1.4rem; vertical-align: text-bottom;"></img>`
@@ -331,7 +344,7 @@ class Element extends HTMLElement {
 	#toggleVisibility(el) {
 		let toggle
 		if(this.#_isMultiselect) {
-			if(el.target.id === ms.domElementIds.headBox) {
+			if( [ms.domElementIds.headBox, ms.domElementIds.headBoxContent].includes(el.target.id) ) {
 				toggle = true
 			} else {
 				// stay open when selected sth from list
