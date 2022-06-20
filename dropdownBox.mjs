@@ -45,7 +45,9 @@ template.innerHTML += `<style>
     cursor: pointer;
 	height: 2em;
 	align-items: center;
-	padding: 0.3em;
+	padding: 0.2em;
+	font-weight: bold;
+	font-size: 1.2rem;
 }
 
 
@@ -76,20 +78,22 @@ template.innerHTML += `<style>
 	list-style: none;
 	background-color: #fff;
 	overflow: auto;
-	border: 1px solid rgba(0,0,0,.15);
+	border: 1px solid rgba(0,0,0,1);
 	z-index: 20;
     max-height: 400px;
-    top: 1.7em;
+    top: 1.8em;
     margin-left: 0px;
     margin-right: 0px;
 	padding-left: 0.3em;
 	left: -1px;
-	width: 98%;
+	width: 98.5%;
     position: absolute;
 	text-align: left;
+	font-weight: normal;
+	font-size: 1rem;
 }
 
-li {
+#${ms.domElementIds.list} li {
 	padding-top: 0.3em;
 	padding-left: 0.3em;
 	padding-right: 0.3em;
@@ -102,8 +106,7 @@ li {
 }
 
 [dropdown-item-checked] {
-    background-color: #044aa3;
-    color: #BBB;
+    background-color: #044aa308;
 }
 
 [dropdown-item-checked]:after {
@@ -119,6 +122,7 @@ li {
 	-o-transform: rotate(45deg);
 	-ms-transform: rotate(45deg);
 	-webkit-transform: rotate(45deg);
+	border-color: black;
 }
 
 </style>`
