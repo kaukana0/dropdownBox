@@ -205,14 +205,14 @@ class Element extends HTMLElement {
 
 	attributeChangedCallback(name, oldVal, newVal) {
 		if (name === 'data' || name === 'callback') {
-			console.warn("setting "+name+" via html attribute is being ignored. please use js property instead.")
+			console.warn("dropdownBox: setting "+name+" via html attribute is being ignored. please use js property instead.")
 		}
 		if (name === 'imagePath') {
 			if(this.#_imagePath === undefined) {
 				this.#_imagePath = newVal
 				// todo: clear and re-fill
 			} else {
-				console.warn("setting imagePath works only one time. It's ignored now.")
+				console.warn("dropdownBox: setting imagePath works only one time. It's ignored now.")
 			}
 		}
 	}
@@ -221,28 +221,32 @@ class Element extends HTMLElement {
 	// that an element - which we want to access - actually exists.
 	// seems that .innerHTML takes a while "asynchroneously"...
 	#fill(itemsMap, groupChanges) {
-		for (const [key, val] of itemsMap.entries()) {
-			this.#addListItem(key, val)
-			const elId = ms.domElementIds.listItemPrefix + key
-			window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
-				this.#onListItemClick(key, val)
-			})
-			window.requestAnimationFrame(() => this.#$(elId).onkeydown = (e) => {
-				if(e.keyCode==13) {
+		if(itemsMap) {
+			for (const [key, val] of itemsMap.entries()) {
+				this.#addListItem(key, val)
+				const elId = ms.domElementIds.listItemPrefix + key
+				window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
 					this.#onListItemClick(key, val)
+				})
+				window.requestAnimationFrame(() => this.#$(elId).onkeydown = (e) => {
+					if(e.keyCode==13) {
+						this.#onListItemClick(key, val)
+					}
+				})
+	
+				if(this.#_selected === undefined) {	// initially (1st element)
+					this.#_selected = [{[key]:val}]
+					this.#updateHeadBoxContent()
+					this.#$(elId).setAttribute("dropdown-item-checked","")
+					this.#invokeCallback(key, val)
 				}
-			})
-
-			if(this.#_selected === undefined) {	// initially (1st element)
-				this.#_selected = [{[key]:val}]
-				this.#updateHeadBoxContent()
-				this.#$(elId).setAttribute("dropdown-item-checked","")
-				this.#invokeCallback(key, val)
+	
+				if(groupChanges && groupChanges.includes(key)) {
+					this.#addSeparator()
+				}
 			}
-
-			if(groupChanges && groupChanges.includes(key)) {
-				this.#addSeparator()
-			}
+		} else {
+			throw Error("dropdownBox: empty input")
 		}
 	}
 
@@ -327,14 +331,14 @@ class Element extends HTMLElement {
 		if(this.#_callback !== undefined) {
 			this.#_callback(key, val)
 		} else {
-			console.warn("dropDownBox: No callback")
+			console.warn("dropdownBox: No callback")
 		}
 	}
 
 	#getCurrentlySingleSelectedElement() {
 		if(this.#_selected) {
 			if(this.#_isMultiselect) {
-				console.warn("dropDownBox: not a single-select box")
+				console.warn("dropdownBox: not a single-select box")
 				return
 			} else {
 				const selecedElId = ms.domElementIds.listItemPrefix + Object.keys(this.#_selected[0])[0]
