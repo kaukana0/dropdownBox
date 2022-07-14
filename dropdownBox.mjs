@@ -200,7 +200,7 @@ class Element extends HTMLElement {
 	}
 
 	static get observedAttributes() {
-		return ['data', 'callback', 'imagePath']
+		return ['data', 'callback', 'imagePath', 'multiselect']
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -214,6 +214,11 @@ class Element extends HTMLElement {
 			} else {
 				console.warn("dropdownBox: setting imagePath works only one time. It's ignored now.")
 			}
+		}
+		if(name === 'multiselect') {
+			// switch multiselect on/off.
+			// warning: switch to off while multiple items are selected is untested.
+			this.connectedCallback()
 		}
 	}
 
@@ -284,47 +289,56 @@ class Element extends HTMLElement {
 	#onListItemClick(key, val) {
 		const that = this
 
-		function action() {
-			that.#updateHeadBoxContent()
-			that.#invokeCallback(key, val)
+		if(that.#_isMultiselect) {
+			handleMultiSelectClick()
+		} else {
+			handleSingleSelectClick()
 		}
 
-		const elId = ms.domElementIds.listItemPrefix + key
-
-		if(this.#_isMultiselect) {
-			const idx = this.#_selected.findIndex((el)=> Object.keys(el)[0] === key)
+		function handleMultiSelectClick() {
+			const elId = ms.domElementIds.listItemPrefix + key
+			const idx = that.#_selected.findIndex((el)=> Object.keys(el)[0] === key)
 			const found = idx > -1
 			if(found) {
-				if(this.#_selected.length > 1) {
-					this.#_selected.splice(idx,1)	// remove
-					this.#$(elId).removeAttribute("dropdown-item-checked")
+				if(that.#_selected.length > 1) {
+					that.#_selected.splice(idx,1)	// remove
+					that.#$(elId).removeAttribute("dropdown-item-checked")
 					action()
 				} else {
 					// nop (at least 1 has to be selected at all times)
 				}
 			} else {
-				if(this.#_selected.length < this.#_maxSelections) {
-					this.#_selected.push({[key]:val})	// add
-					this.#$(elId).setAttribute("dropdown-item-checked","")
+				if(that.#_selected.length < that.#_maxSelections) {
+					that.#_selected.push({[key]:val})	// add
+					that.#$(elId).setAttribute("dropdown-item-checked","")
 					action()
 				} else {
 					// max number of selectable items reached
 				}
 			}
-		} else {	// single select logic
-			const selectionChanged = this.#_selected[0] !== {[key]:val}
+		}
+	
+		function handleSingleSelectClick() {
+			const elId = ms.domElementIds.listItemPrefix + key
+			const selectionChanged = that.#_selected[0] !== {[key]:val}
 			if(selectionChanged) {
 				// deselect current
-				this.#getCurrentlySingleSelectedElement().removeAttribute("dropdown-item-checked")
+				that.#getCurrentlySingleSelectedElement().removeAttribute("dropdown-item-checked")
 				// memorize and select new one
-				this.#_selected[0] = {[key]:val}
-				this.#$(elId).setAttribute("dropdown-item-checked","")
-
+				that.#_selected[0] = {[key]:val}
+				that.#$(elId).setAttribute("dropdown-item-checked","")
+	
 				action()
 			} else {
 				// nop
 			}
 		}
+
+		function action() {
+			that.#updateHeadBoxContent()
+			that.#invokeCallback(key, val)
+		}
+
 	}
 	
 	#invokeCallback(key,val) {
