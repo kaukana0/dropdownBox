@@ -132,7 +132,7 @@ class Element extends HTMLElement {
 
 	#_imagePath
 	#_isMultiselect
-	#_selected		// [{key:val}]
+	#_selected		// [{key:val}] note: in singleselect, list contains 1 element
 	#_callback		// function
 	#_currentText
 	#_maxSelections
