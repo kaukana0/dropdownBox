@@ -240,10 +240,7 @@ class Element extends HTMLElement {
 				})
 	
 				if(this.#_selected === undefined) {	// initially (1st element)
-					this.#_selected = [{[key]:val}]
-					this.#updateHeadBoxContent()
-					this.#$(elId).setAttribute("dropdown-item-checked","")
-					this.#invokeCallback(key, val)
+					this.#select(key, val)
 				}
 	
 				if(groupChanges && groupChanges.includes(key)) {
@@ -253,6 +250,14 @@ class Element extends HTMLElement {
 		} else {
 			throw Error("dropdownBox: empty input")
 		}
+	}
+
+	#select(key, val) {
+		const elId = ms.domElementIds.listItemPrefix + key
+		this.#_selected = [{[key]:val}]
+		this.#updateHeadBoxContent()
+		this.#$(elId).setAttribute("dropdown-item-checked","")
+		this.#invokeCallback(key, val)
 	}
 
 	#addListItem(key, val) {
@@ -271,19 +276,54 @@ class Element extends HTMLElement {
 		return this.#_imagePath === "" ? "" : `<img src='${this.#_imagePath}/${key}.png' style="height:1.4rem; vertical-align: text-bottom;"></img>`
 	}
 
-	#updateHeadBoxContent() {
-		const selectedCount = this.#_selected.length
-		let html = "&varnothing;"
+	#getClearButtonHtml() {
+		const uniquePrefix = Math.floor(Math.random() * 10000)
+		const id = uniquePrefix+"clearButton"
+		const retVal = `<button id="${id}" type='button' class='btn btn-secondary'>&#11198;</button>`
+		return [id, retVal]
+	}
 
-		if(selectedCount === 1) {	// the case for singleselect OR multiselect w/ 1 element
-			const val = Object.values(this.#_selected[0])[0]
-			const key = Object.keys(this.#_selected[0])[0]
-			html = this.#getImageHtml(key) + " " + val
+	#resetSelections() {
+		if(this.#_isMultiselect) {
+			let isFirst = true
+			for(const el of this.#$(ms.domElementIds.list).children) {
+				if(isFirst) {
+					isFirst = false
+					const firstBorn = this.#$(ms.domElementIds.list).children[0]
+					this.#select(firstBorn.getAttribute("key"), firstBorn.getAttribute("val"))
+				} else {
+					el.removeAttribute("dropdown-item-checked")
+				}
+			}
 		} else {
-			html = `${selectedCount} ${this.getAttribute('selectedText') || "selected"}`
+			console.error("How did that happen!?")
 		}
-		this.#_currentText = html
-		this.#$(ms.domElementIds.headBoxContent).innerHTML = html
+	}
+
+	#updateHeadBoxContent() {
+		const that = this
+		
+		const selectedCount = this.#_selected.length
+		if(selectedCount === 1) {	// the case for singleselect OR multiselect w/ 1 element
+			const key = Object.keys(this.#_selected[0])[0]
+			const val = Object.values(this.#_selected[0])[0]
+			action(val, this.#getImageHtml(key) + " " + val)
+		} else {
+			const text = `${selectedCount} ${this.getAttribute('selectedText') || "selected"}`
+			const [elId, clearButtonHtml] = this.#getClearButtonHtml()
+			const html = text + "  " + clearButtonHtml
+			action(text,html)
+			// the innerHTML has to have inserted this element before this to work
+			window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
+				this.#resetSelections()
+			})
+		}
+
+		function action(text, html) {
+			that.#_currentText = text
+			that.#$(ms.domElementIds.headBoxContent).innerHTML = html
+		}
+
 	}
 
 	#onListItemClick(key, val) {
