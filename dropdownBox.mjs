@@ -130,12 +130,13 @@ template.innerHTML += `<style>
 
 class Element extends HTMLElement {
 
-	#_imagePath
-	#_isMultiselect
+	#_imagePath		// string; from an attribute
+	#_isMultiselect	// bool; from an attribute
+	#_callback		// function; from an attribute
+	#_maxSelections	// from an attribute
+	#_displayKeys	// bool; from an attribute
 	#_selected		// [{key:val}] note: in singleselect, list contains 1 element
-	#_callback		// function
-	#_currentText
-	#_maxSelections
+	#_currentText	// textual representation of what's shown in headBox
 
 	#$(elementId) {
 		return this.shadowRoot.getElementById(elementId)
@@ -169,6 +170,7 @@ class Element extends HTMLElement {
 		this.#_imagePath = this.getAttribute('imagePath') || ""
 		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
 		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 100
+		this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
 	}
 
 	set data(val) {
@@ -262,10 +264,12 @@ class Element extends HTMLElement {
 
 	#addListItem(key, val) {
 		const img = this.#_imagePath === "" ? "" : this.#getImageHtml(key)
+		const keysHtml = this.#_displayKeys ? `<div style="display: inline; float: right; margin-right: 2em; ">${key}</div>` : ""
 		this.#$(ms.domElementIds.list).innerHTML += `
-          <li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}' tabindex="0">
-		  	  ${img} ${val}
-          </li>
+		<li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}' tabindex="0">
+			<div style="display: inline;">${img} ${val} </div>
+			${keysHtml}
+		</li>
     `}
 
 	#addSeparator() {
