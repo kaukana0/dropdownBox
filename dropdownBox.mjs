@@ -79,7 +79,9 @@ template.innerHTML += `<style>
 	background-color: #fff;
 	overflow: auto;
 	border: 1px solid rgba(0,0,0,1);
-	z-index: 20;
+	/* must be >0 because above other content.
+	   is arbitrarily set to 5 to allow 4 other levels below. */
+	z-index: 5;
     max-height: 400px;
     top: 1.8em;
     margin-left: 0px;
