@@ -285,7 +285,7 @@ class Element extends HTMLElement {
 	#getClearButtonHtml() {
 		const uniquePrefix = Math.floor(Math.random() * 10000)
 		const id = uniquePrefix+"clearButton"
-		const retVal = `<button id="${id}" type='button' class='btn btn-secondary'>&#11198;</button>`
+		const retVal = `<button id="${id}" type='button'>&#8634;</button>`
 		return [id, retVal]
 	}
 
