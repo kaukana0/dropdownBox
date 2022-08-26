@@ -59,6 +59,15 @@ template.innerHTML += `<style>
 	text-align: left;
 }
 
+#${ms.domElementIds.headBoxContent} button {
+	color:black; 
+	vertical-align: text-bottom;
+	/*background-color: #FFFFED;*/
+	border: 1px solid black;
+	border-radius:2px;
+	/*border-radius:14px;*/
+}
+
 #${ms.domElementIds.spacer} {
 	flex-grow: 1;
 }
@@ -285,7 +294,8 @@ class Element extends HTMLElement {
 	#getClearButtonHtml() {
 		const uniquePrefix = Math.floor(Math.random() * 10000)
 		const id = uniquePrefix+"clearButton"
-		const retVal = `<button id="${id}" type='button'>&#8634;</button>`
+		// can't use fontawesome or similar: shadow DOM...
+		const retVal = `<button id="${id}" type='button'>X</button>`
 		return [id, retVal]
 	}
 
