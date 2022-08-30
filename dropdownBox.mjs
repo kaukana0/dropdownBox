@@ -1,19 +1,3 @@
-/*
-* req1 (done) - have a dropdownbox w/ arrow in it opening/closing a list of options
-* req2 (done) - multiselect or single select ability
-* req3 (done) - selectbox data format: {OPT1:'Option 1'}
-* req4 (done) - show images in front of text (convention: image names like OPT1.png)
-* req5 (done) - show a checkmark rightmost in option if it's selected
-* req6 (done) - scrollable w/ adjustable max size
-* req7 (done) - get selected element(s) (their key)
-* req8 (done) - make dropdown list topmost and not pushing down page contents
-* req9 (done) - when multiselect say "N selected" or display the 1 that's selected
-* req10 (done) - dismissible dropdown
-* req11 (done) - image in the headerbox
-* req12  (done) - layout details (sizes, font, padding etc)
-* req13 (done) - accessibility: tab behaviour
-*/
-
 // magic strings
 const ms = {
 	domElementIds: {
@@ -180,7 +164,7 @@ class Element extends HTMLElement {
 	connectedCallback() {
 		this.#_imagePath = this.getAttribute('imagePath') || ""
 		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
-		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 100
+		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 10
 		this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
 	}
 
@@ -194,6 +178,10 @@ class Element extends HTMLElement {
 
 	set selectedText(val) {
 		this.setAttribute('selectedText', val)
+	}
+
+	set maxSelections(val) {
+		this.setAttribute('maxSelections', val)
 	}
 
 	get selectedText() {
@@ -213,7 +201,7 @@ class Element extends HTMLElement {
 	}
 
 	static get observedAttributes() {
-		return ['data', 'callback', 'imagePath', 'multiselect']
+		return ['data', 'callback', 'imagePath', 'multiselect', 'maxselections']
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -233,6 +221,12 @@ class Element extends HTMLElement {
 			// warning: switch to off while multiple items are selected is untested.
 			this.connectedCallback()
 		}
+		if(name === 'maxselections') {
+			if(newVal) {
+				this.#_maxSelections = parseInt(newVal)
+				this.#resetSelections()	// alternatively, implement removing excessive ones
+			}
+		}			
 	}
 
 	// note: the purpose of using requestAnimationFrame() here is to make sure 
@@ -312,7 +306,7 @@ class Element extends HTMLElement {
 				}
 			}
 		} else {
-			console.error("How did that happen!?")
+			console.error("dropdownBox: How did that happen!?")
 		}
 	}
 
@@ -330,8 +324,14 @@ class Element extends HTMLElement {
 			const html = text + "  " + clearButtonHtml
 			action(text,html)
 			// the innerHTML has to have inserted this element before this to work
-			window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
-				this.#resetSelections()
+			window.requestAnimationFrame(() => {
+				if(this.#$(elId)) {
+					this.#$(elId).onclick = () => {
+						this.#resetSelections()
+					}
+				} else {
+					console.warn(`dropdownBox: element w/ id ${elId} doesn't exist`)
+				}
 			})
 		}
 
