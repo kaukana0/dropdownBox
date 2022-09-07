@@ -132,6 +132,7 @@ class Element extends HTMLElement {
 	#_displayKeys	// bool; from an attribute
 	#_selected		// [{key:val}] note: in singleselect, list contains 1 element
 	#_currentText	// textual representation of what's shown in headBox
+	#_isLocked		// if true, user can't influece selection and no callback will be invoked
 
 	#$(elementId) {
 		return this.shadowRoot.getElementById(elementId)
@@ -140,6 +141,7 @@ class Element extends HTMLElement {
 	constructor() {
 		super()
 
+		this.#_isLocked = false
 		this.#_maxSelections = 10
 
 		this.attachShadow({ mode: 'open' })
@@ -202,6 +204,10 @@ class Element extends HTMLElement {
 
 	static get observedAttributes() {
 		return ['data', 'callback', 'imagePath', 'multiselect', 'maxselections']
+	}
+
+	setLocked(isLocked) {
+		this.#_isLocked = isLocked
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -294,6 +300,8 @@ class Element extends HTMLElement {
 	}
 
 	#resetSelections() {
+		if(this.#_isLocked) return
+
 		if(this.#_isMultiselect) {
 			let isFirst = true
 			for(const el of this.#$(ms.domElementIds.list).children) {
@@ -345,6 +353,8 @@ class Element extends HTMLElement {
 	#onListItemClick(key, val) {
 		const that = this
 
+		if(this.#_isLocked) return
+		
 		if(that.#_isMultiselect) {
 			handleMultiSelectClick()
 		} else {
