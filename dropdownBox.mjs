@@ -1,127 +1,15 @@
+import MarkUpCode from  "./markUpCode.mjs"
+
 // magic strings
 const ms = {
 	domElementIds: {
 		headBox: 'headBox',     				// the select box (with a little down arrow inside)
-		headBoxContent: 'headBoxContent',		// mostly the same as a list entry (text and possibly image)
+		headBoxContent: 'headBoxContent',		// mostly the same as a list entry (text and possibly image), possibly styled differently
 		list: 'DropdownList',           		// list below the box; initially invisible
-		listItemPrefix: 'ListItem',
-		spacer: 'spacer'
+		listItemPrefix: 'ListItem',				// prefix for ids
+		spacer: 'spacer'						// pushes the little down arrow in the headbox over to the right
 	},
 }
-
-const template = document.createElement('template')
-
-template.innerHTML = `
-<div id='${ms.domElementIds.headBox}' tabindex="0">
-  <div id='${ms.domElementIds.headBoxContent}'>&varnothing;</div>
-  <div id='${ms.domElementIds.spacer}'></div>
-  <ul id='${ms.domElementIds.list}'></ul>
-</div>
-`
-
-
-template.innerHTML += `<style>
-
-#${ms.domElementIds.headBox} {
-	position:relative;
-	display: flex;
-	border: 1px solid rgba(0,0,0,1);
-    cursor: pointer;
-	height: 2em;
-	align-items: center;
-	padding: 0.2em;
-	font-weight: bold;
-	font-size: 1.2rem;
-}
-
-
-#${ms.domElementIds.headBoxContent} {
-	height: 1.8em;
-	overflow: hidden;
-	margin-top: 0.4em;
-	margin-left: 0.3em;
-	text-align: left;
-}
-
-#${ms.domElementIds.headBoxContent} button {
-	color:black; 
-	vertical-align: text-bottom;
-	/*background-color: #FFFFED;*/
-	border: 1px solid black;
-	border-radius:2px;
-	/*border-radius:14px;*/
-}
-
-#${ms.domElementIds.spacer} {
-	flex-grow: 1;
-}
-
-/* this is bootstrap's CSS triangle; only positionable here via margin */
-#${ms.domElementIds.headBox}:after {
-	content: "";
-    border-top: 0.3em solid;
-    border-right: 0.3em solid transparent;
-    border-bottom: 0;
-    border-left: 0.3em solid transparent;
-	margin-right: 0.255em;
-}
-
-#${ms.domElementIds.list} {
-	display: none;
-	list-style: none;
-	background-color: #fff;
-	overflow: auto;
-	border: 1px solid rgba(0,0,0,1);
-	/* must be >0 because above other content.
-	   is arbitrarily set to 5 to allow 4 other levels below. */
-	z-index: 5;
-    max-height: 400px;
-    top: 1.8em;
-    margin-left: 0px;
-    margin-right: 0px;
-	padding-left: 0.3em;
-	left: -1px;
-	width: 98.5%;
-    position: absolute;
-	text-align: left;
-	font-weight: normal;
-	font-size: 1rem;
-}
-
-#${ms.domElementIds.list} li {
-	padding-top: 0.3em;
-	padding-left: 0.3em;
-	padding-right: 0.3em;
-	line-height: 1.8rem;
-}
-
-#${ms.domElementIds.list} li:hover {
-    background-color: #CCC;
-    color: black;
-}
-
-[dropdown-item-checked] {
-    background-color: #044aa308;
-}
-
-[dropdown-item-checked]:after {
-	position: absolute;
-	right: 0.8rem;
-	margin-top: 1px;
-	content: '';
-	width: 6px;
-	height: 12px;
-	border-bottom: 3px solid #666;
-	border-right: 3px solid #666;
-	transform: rotate(45deg);
-	-o-transform: rotate(45deg);
-	-ms-transform: rotate(45deg);
-	-webkit-transform: rotate(45deg);
-	border-color: black;
-}
-
-</style>`
-
 
 class Element extends HTMLElement {
 
@@ -129,7 +17,8 @@ class Element extends HTMLElement {
 	#_isMultiselect	// bool; from an attribute
 	#_callback		// function; from an attribute
 	#_maxSelections	// from an attribute
-	#_displayKeys	// bool; from an attribute
+	#_displayKeys	// bool; from an attribute; for each entry, show it's on the right side in the area
+	#_fractions		// # of fractions of left side of the listitem list (relevent only for displayKeys. see docu.md)
 	#_selected		// [{key:val}] note: in singleselect, list contains 1 element
 	#_currentText	// textual representation of what's shown in headBox
 	#_isLocked		// if true, user can't influece selection and no callback will be invoked
@@ -145,7 +34,7 @@ class Element extends HTMLElement {
 		this.#_maxSelections = 10
 
 		this.attachShadow({ mode: 'open' })
-		const tmp = template.content.cloneNode(true)
+		const tmp = MarkUpCode.getHtmlTemplate(MarkUpCode.mainElements(ms) + MarkUpCode.css(ms)).cloneNode(true)
 		this.shadowRoot.appendChild(tmp)
 
 		this.#$(ms.domElementIds.headBox).addEventListener('click', (el) => this.#toggleVisibility(el))
@@ -157,8 +46,6 @@ class Element extends HTMLElement {
 				this.#$(ms.domElementIds.list).style.display = "none"
 			}
 		})
-		//this.#$(ms.domElementIds.headBox).addEventListener('focusout', (e) => {
-		//})
 
 		this.#makeDismissable()
 	}
@@ -168,6 +55,7 @@ class Element extends HTMLElement {
 		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
 		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 10
 		this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
+		this.#_fractions = this.hasAttribute('fractions') ? this.getAttribute('fractions') : 3
 	}
 
 	set data(val) {
@@ -257,7 +145,7 @@ class Element extends HTMLElement {
 				}
 	
 				if(groupChanges && groupChanges.includes(key)) {
-					this.#addSeparator()
+					this.#$(ms.domElementIds.list).innerHTML += MarkUpCode.separator()
 				}
 			}
 		} else {
@@ -274,28 +162,20 @@ class Element extends HTMLElement {
 	}
 
 	#addListItem(key, val) {
-		const img = this.#_imagePath === "" ? "" : this.#getImageHtml(key)
-		const keysHtml = this.#_displayKeys ? `<div style="display: inline; float: right; margin-right: 2em; ">${key}</div>` : ""
-		this.#$(ms.domElementIds.list).innerHTML += `
-		<li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}' tabindex="0">
-			<div style="display: inline;">${img} ${val} </div>
-			${keysHtml}
-		</li>
-    `}
-
-	#addSeparator() {
-		this.#$(ms.domElementIds.list).innerHTML += `<hr>`
+		const imgHtml =  this.#getImgHtml(key)
+		const keyHtml =  this.#_displayKeys ? MarkUpCode.listItemKey(key) : ""
+		this.#$(ms.domElementIds.list).innerHTML += MarkUpCode.listItem(ms, key, val, imgHtml, keyHtml, this.#_fractions)
 	}
 
-	#getImageHtml(key) {
-		return this.#_imagePath === "" ? "" : `<img src='${this.#_imagePath}/${key}.png' style="height:1.4rem; vertical-align: text-bottom;"></img>`
+	#getImgHtml(key) {
+		return this.#_imagePath ? MarkUpCode.image(this.#_imagePath, key) : ""	
 	}
 
 	#getClearButtonHtml() {
 		const uniquePrefix = Math.floor(Math.random() * 10000)
 		const id = uniquePrefix+"clearButton"
-		// can't use fontawesome or similar: shadow DOM...
-		const retVal = `<button id="${id}" type='button'>X</button>`
+		// can't use fontawesome or similar because shadow DOM...
+		const retVal = MarkUpCode.clearButton(id)
 		return [id, retVal]
 	}
 
@@ -325,7 +205,7 @@ class Element extends HTMLElement {
 		if(selectedCount === 1) {	// the case for singleselect OR multiselect w/ 1 element
 			const key = Object.keys(this.#_selected[0])[0]
 			const val = Object.values(this.#_selected[0])[0]
-			action(val, this.#getImageHtml(key) + " " + val)
+			action(val, this.#getImgHtml(key) + " " + val)
 		} else {
 			const text = `${selectedCount} ${this.getAttribute('selectedText') || "selected"}`
 			const [elId, clearButtonHtml] = this.#getClearButtonHtml()
