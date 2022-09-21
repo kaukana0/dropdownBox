@@ -22,6 +22,7 @@ class Element extends HTMLElement {
 	#_selected		// [{key:val}] note: in singleselect, list contains 1 element
 	#_currentText	// textual representation of what's shown in headBox
 	#_isLocked		// if true, user can't influece selection and no callback will be invoked
+	#_orderedItems	// for instance ["European Union","Austria",...]
 
 	#$(elementId) {
 		return this.shadowRoot.getElementById(elementId)
@@ -32,6 +33,7 @@ class Element extends HTMLElement {
 
 		this.#_isLocked = false
 		this.#_maxSelections = 10
+		this.#_orderedItems = []
 
 		this.attachShadow({ mode: 'open' })
 		const tmp = MarkUpCode.getHtmlTemplate(MarkUpCode.mainElements(ms) + MarkUpCode.css(ms)).cloneNode(true)
@@ -129,6 +131,7 @@ class Element extends HTMLElement {
 	#fill(itemsMap, groupChanges) {
 		if(itemsMap) {
 			for (const [key, val] of itemsMap.entries()) {
+				this.#_orderedItems.push(val)
 				this.#addListItem(key, val)
 				const elId = ms.domElementIds.listItemPrefix + key
 				window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
@@ -211,7 +214,7 @@ class Element extends HTMLElement {
 			const [elId, clearButtonHtml] = this.#getClearButtonHtml()
 			const html = text + "  " + clearButtonHtml
 			action(text,html)
-			// the innerHTML has to have inserted this element before this to work
+			// the innerHTML has to have inserted this element before attaching an evt-handler
 			window.requestAnimationFrame(() => {
 				if(this.#$(elId)) {
 					this.#$(elId).onclick = () => {
@@ -256,12 +259,21 @@ class Element extends HTMLElement {
 			} else {
 				if(that.#_selected.length < that.#_maxSelections) {
 					that.#_selected.push({[key]:val})	// add
+					alignOrderOfSelectedItems()
 					that.#$(elId).setAttribute("dropdown-item-checked","")
 					action()
 				} else {
 					// max number of selectable items reached
 				}
 			}
+		}
+
+		function alignOrderOfSelectedItems() {		// ...to the order of dropdownBox items - and do it by value
+			that.#_selected.sort((e,f) => {
+				const a = that.#_orderedItems.findIndex(_e => _e === Object.entries(f)[0][1])
+				const b = that.#_orderedItems.findIndex(_e => _e === Object.entries(e)[0][1])
+				return a>b ? -1:1
+			})
 		}
 	
 		function handleSingleSelectClick() {
@@ -273,7 +285,6 @@ class Element extends HTMLElement {
 				// memorize and select new one
 				that.#_selected[0] = {[key]:val}
 				that.#$(elId).setAttribute("dropdown-item-checked","")
-	
 				action()
 			} else {
 				// nop
