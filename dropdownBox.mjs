@@ -100,6 +100,17 @@ class Element extends HTMLElement {
 		this.#_isLocked = isLocked
 	}
 
+	setState(data) {
+		this.#resetSelections(false)
+		data.forEach(key => {
+			this.#onListItemClick(key, "BLA", false)		//TODO
+		})
+	}
+
+	getState() {
+		return this.selectedKeys
+	}
+
 	attributeChangedCallback(name, oldVal, newVal) {
 		if (name === 'data' || name === 'callback') {
 			console.warn("dropdownBox: setting "+name+" via html attribute is being ignored. please use js property instead.")
@@ -145,6 +156,7 @@ class Element extends HTMLElement {
 	
 				if(this.#_selected === undefined) {	// initially (1st element)
 					this.#select(key, val)
+					this.#invokeCallback(key, val)
 				}
 	
 				if(groupChanges && groupChanges.includes(key)) {
@@ -161,7 +173,6 @@ class Element extends HTMLElement {
 		this.#_selected = [{[key]:val}]
 		this.#updateHeadBoxContent()
 		this.#$(elId).setAttribute("dropdown-item-checked","")
-		this.#invokeCallback(key, val)
 	}
 
 	#addListItem(key, val) {
@@ -182,7 +193,7 @@ class Element extends HTMLElement {
 		return [id, retVal]
 	}
 
-	#resetSelections() {
+	#resetSelections(invokeCallback=true) {
 		if(this.#_isLocked) return
 
 		if(this.#_isMultiselect) {
@@ -191,7 +202,10 @@ class Element extends HTMLElement {
 				if(isFirst) {
 					isFirst = false
 					const firstBorn = this.#$(ms.domElementIds.list).children[0]
-					this.#select(firstBorn.getAttribute("key"), firstBorn.getAttribute("val"))
+					const key = firstBorn.getAttribute("key")
+					const val = firstBorn.getAttribute("val")
+					this.#select(key, val)
+					if(invokeCallback) { this.#invokeCallback(key, val) }
 				} else {
 					el.removeAttribute("dropdown-item-checked")
 				}
@@ -233,7 +247,7 @@ class Element extends HTMLElement {
 
 	}
 
-	#onListItemClick(key, val) {
+	#onListItemClick(key, val, invokeCallback=true) {
 		const that = this
 
 		if(this.#_isLocked) return
@@ -293,7 +307,7 @@ class Element extends HTMLElement {
 
 		function action() {
 			that.#updateHeadBoxContent()
-			that.#invokeCallback(key, val)
+			if(invokeCallback) { that.#invokeCallback(key, val) }
 		}
 
 	}
