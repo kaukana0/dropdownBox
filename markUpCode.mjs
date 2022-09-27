@@ -9,7 +9,6 @@ export default class MarkUpCode {
 		return `
 		<div id='${ms.domElementIds.headBox}' tabindex="0">
 		  <div id='${ms.domElementIds.headBoxContent}'>&varnothing;</div>
-		  <div id='${ms.domElementIds.spacer}'></div>
 		  <ul id='${ms.domElementIds.list}'></ul>
 		</div>
 		`
@@ -46,10 +45,6 @@ export default class MarkUpCode {
 			border: 1px solid black;
 			border-radius:2px;
 			/*border-radius:14px;*/
-		}
-		
-		#${ms.domElementIds.spacer} {
-			flex-grow: 1;
 		}
 		
 		/* this is bootstrap's CSS triangle; only positionable here via margin */
@@ -140,9 +135,11 @@ export default class MarkUpCode {
 	}
 
 	static headBoxContent(path, key, val, displayKey, fractions) {
-		if(path) {		// image left, then text
+		if(path) {		
+			// image left, then text
 			return `${MarkUpCode.image(path,key)} ${val}`
-		} else {		// no image, text, possibly key in right column left aligned
+		} else {		
+			// no image, text, possibly key in right column
 			return MarkUpCode.grid(fractions, "<div>"+val+"</div>" + (displayKey?key:""))
 		}
 	}

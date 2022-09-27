@@ -149,8 +149,11 @@ class Element extends HTMLElement {
 				this.#$(ms.domElementIds.list).innerHTML += MarkUpCode.listItem(ms, key, val, this.#_imagePath, this.#_displayKeys, this.#_fractions)
 
 				const elId = ms.domElementIds.listItemPrefix + key
-				window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
+				window.requestAnimationFrame(() => this.#$(elId).onclick = (ev) => {
 					this.#onListItemClick(key, val)
+					if(this.#_isMultiselect) {
+						ev.stopPropagation()	// don't close dropdown list
+					}
 				})
 				window.requestAnimationFrame(() => this.#$(elId).onkeydown = (e) => {
 					if(e.keyCode==13) {
@@ -225,11 +228,12 @@ class Element extends HTMLElement {
 			// the innerHTML has to have inserted this element before attaching an evt-handler
 			window.requestAnimationFrame(() => {
 				if(this.#$(elId)) {
-					this.#$(elId).onclick = () => {
+					this.#$(elId).onclick = (ev) => {
 						this.#resetSelections()
+						ev.stopPropagation()	// don't toggle dropdown
 					}
 				} else {
-					console.warn(`dropdownBox: element w/ id ${elId} doesn't exist`)
+					console.debug(`dropdownBox: element w/ id ${elId} doesn't exist`)
 				}
 			})
 		}
@@ -310,7 +314,7 @@ class Element extends HTMLElement {
 		if(this.#_callback !== undefined) {
 			this.#_callback(key, val)
 		} else {
-			console.warn("dropdownBox: No callback")
+			console.debug("dropdownBox: No callback")
 		}
 	}
 
@@ -329,31 +333,17 @@ class Element extends HTMLElement {
 	}
 
 	#toggleVisibility(el) {
-		let toggle
-		if(this.#_isMultiselect) {
-			if( [ms.domElementIds.headBox, ms.domElementIds.headBoxContent].includes(el.target.id) ) {
-				toggle = true
-			} else {
-				// stay open when selected sth from list
-				toggle = false
-			}
-		} else {
-			// close when clicked on head or selected sth from list
-			toggle = true
-		}
-		if(toggle) {
-			const list = this.#$(ms.domElementIds.list)
-			const isCurrentlyVisible = list.style.display !== "block"
+		const list = this.#$(ms.domElementIds.list)
+		const isCurrentlyVisible = list.style.display !== "block"
 
-			isCurrentlyVisible ? list.style.display = "block" : list.style.display = "none"
+		isCurrentlyVisible ? list.style.display = "block" : list.style.display = "none"
 
-			if(!this.#_isMultiselect && isCurrentlyVisible) {
-				const selEl = this.#getCurrentlySingleSelectedElement()
-				if(selEl) { selEl.scrollIntoView() }
-				// note: the list stores where it was last scrolled to.
-				// so, if for instance, you select the first item and scroll all the way down,
-				// without this, it would stay down, with this, it's scrolled topmost
-			}
+		if(!this.#_isMultiselect && isCurrentlyVisible) {
+			const selEl = this.#getCurrentlySingleSelectedElement()
+			if(selEl) { selEl.scrollIntoView() }
+			// note: the list stores where it was last scrolled to.
+			// so, if for instance, you select the first item and scroll all the way down,
+			// without this, it would stay down, with this, it's scrolled topmost
 		}
 
 		// note: clicks anywhere else other than this component are handled under dismissability
