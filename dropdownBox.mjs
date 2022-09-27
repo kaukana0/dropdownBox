@@ -1,4 +1,4 @@
-import MarkUpCode from  "./markUpCode.mjs"
+import MarkUpCode from  "./markUpCode.mjs"		// keep this file html/css free
 
 // magic strings
 const ms = {
@@ -18,6 +18,7 @@ class Element extends HTMLElement {
 	#_callback		// function; from an attribute
 	#_maxSelections	// from an attribute
 	#_displayKeys	// bool; from an attribute; for each entry, show it's on the right side in the area
+	#_displayKeyInHeadbox	// bool
 	#_fractions		// # of fractions of left side of the listitem list (relevent only for displayKeys. see docu.md)
 	#_selected		// [{key:val}] note: in singleselect, list contains 1 element
 	#_currentText	// textual representation of what's shown in headBox
@@ -57,6 +58,7 @@ class Element extends HTMLElement {
 		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
 		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 10
 		this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
+		this.#_displayKeyInHeadbox = this.hasAttribute('displayKeyInHeadbox') ? true : false
 		this.#_fractions = this.hasAttribute('fractions') ? this.getAttribute('fractions') : 3
 	}
 
@@ -142,8 +144,10 @@ class Element extends HTMLElement {
 	#fill(itemsMap, groupChanges) {
 		if(itemsMap) {
 			for (const [key, val] of itemsMap.entries()) {
+
 				this.#_orderedItems.push(val)
-				this.#addListItem(key, val)
+				this.#$(ms.domElementIds.list).innerHTML += MarkUpCode.listItem(ms, key, val, this.#_imagePath, this.#_displayKeys, this.#_fractions)
+
 				const elId = ms.domElementIds.listItemPrefix + key
 				window.requestAnimationFrame(() => this.#$(elId).onclick = () => {
 					this.#onListItemClick(key, val)
@@ -173,16 +177,6 @@ class Element extends HTMLElement {
 		this.#_selected = [{[key]:val}]
 		this.#updateHeadBoxContent()
 		this.#$(elId).setAttribute("dropdown-item-checked","")
-	}
-
-	#addListItem(key, val) {
-		const imgHtml =  this.#getImgHtml(key)
-		const keyHtml =  this.#_displayKeys ? MarkUpCode.listItemKey(key) : ""
-		this.#$(ms.domElementIds.list).innerHTML += MarkUpCode.listItem(ms, key, val, imgHtml, keyHtml, this.#_fractions)
-	}
-
-	#getImgHtml(key) {
-		return this.#_imagePath ? MarkUpCode.image(this.#_imagePath, key) : ""	
 	}
 
 	#getClearButtonHtml() {
@@ -222,7 +216,7 @@ class Element extends HTMLElement {
 		if(selectedCount === 1) {	// the case for singleselect OR multiselect w/ 1 element
 			const key = Object.keys(this.#_selected[0])[0]
 			const val = Object.values(this.#_selected[0])[0]
-			action(val, this.#getImgHtml(key) + " " + val)
+			action(val, MarkUpCode.headBoxContent(this.#_imagePath, key, val, this.#_displayKeyInHeadbox, this.#_fractions))
 		} else {
 			const text = `${selectedCount} ${this.getAttribute('selectedText') || "selected"}`
 			const [elId, clearButtonHtml] = this.#getClearButtonHtml()

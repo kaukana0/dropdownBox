@@ -32,6 +32,7 @@ export default class MarkUpCode {
 		
 		#${ms.domElementIds.headBoxContent} {
 			height: 1.8em;
+			width: 100%;
 			overflow: hidden;
 			margin-top: 0.4em;
 			margin-left: 0.3em;
@@ -119,24 +120,36 @@ export default class MarkUpCode {
         </style>`
 	}
 
-	static listItemKey(text) {
-		return `<div>${text}</div>`
+	// just for 1 row. a means to have a right column which is left aligned.
+	static grid(fractions, content) {
+		return `
+			<div style="display: grid; grid-template-columns: ${fractions}fr 1fr;">
+				${content}
+			</div>
+		`
 	}
 
-    static listItem(ms, key, val, imgHtml, keyHtml, fractions) {
+    static listItem(ms, key, val, path, displayKeys, fractions) {
+		const imgHtml =  MarkUpCode.image(path, key)
+		const keyHtml =  displayKeys ? `<div>${key}</div>` : ""
         return `
 		<li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}' tabindex="0">
-			<div style="display: grid; grid-template-columns: ${fractions}fr 1fr;">
-				<div>${imgHtml} ${val}</div>
-				${keyHtml}
-			</div>
+			${MarkUpCode.grid(fractions, `<div>${imgHtml} ${val}</div>${keyHtml}`)}
 		</li>
     	`
 	}
 
-    static image(path, key) {
-        return `<img src='${path}/${key}.png' style="height:1.4rem; vertical-align: text-bottom;"></img>`
-    }
+	static headBoxContent(path, key, val, displayKey, fractions) {
+		if(path) {		// image left, then text
+			return `${MarkUpCode.image(path,key)} ${val}`
+		} else {		// no image, text, possibly key in right column left aligned
+			return MarkUpCode.grid(fractions, "<div>"+val+"</div>" + (displayKey?key:""))
+		}
+	}
+
+	static image(path, key) {
+		return path ? `<img src='${path}/${key}.png' style="height:1.4rem; vertical-align: text-bottom;"></img>` : ""	
+	}
 
     static clearButton(id) {
         return `<button id="${id}" type='button'>Reset</button>`
