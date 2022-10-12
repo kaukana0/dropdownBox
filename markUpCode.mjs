@@ -25,7 +25,7 @@ export default class MarkUpCode {
 			align-items: center;
 			padding: 0.2em;
 			/*font-weight: bold;*/
-			font-size: 1.2rem;
+			font-size: 1.1rem;
 		}
 		
 		
