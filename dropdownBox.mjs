@@ -208,7 +208,7 @@ class Element extends HTMLElement {
 				}
 			}
 		} else {
-			console.error("dropdownBox: How did that happen!?")
+			console.error("dropdownBox: Reset despite Single-select mode. How did that happen!?")
 		}
 	}
 
