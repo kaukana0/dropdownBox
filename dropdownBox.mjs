@@ -102,15 +102,16 @@ class Element extends HTMLElement {
 		this.#_isLocked = isLocked
 	}
 
-	setState(data) {
-		this.#resetSelections(false)
-		data.forEach(key => {
-			this.#onListItemClick(key, "BLA", false)		//TODO
-		})
-	}
-
-	getState() {
-		return this.selectedKeys
+	setSelectedByKey(key) {
+		if(typeof key !== "undefined" && key!==null) {
+			const val = this.#getValueByKey(key)
+			if(val!==null) {
+				this.#deselectAll()
+				this.#select(key,val)
+			} else {
+				console.warn(`dropdownBox: setSelectedByKey - key ${key} doesn't exist.`)
+			}
+		}
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -175,11 +176,29 @@ class Element extends HTMLElement {
 		}
 	}
 
+	#getValueByKey(key) {
+		var items = this.#$(ms.domElementIds.list).getElementsByTagName("li");
+		for (var i = 0; i < items.length; ++i) {
+			console.log(items[i])
+			console.log(items[i].getAttribute("key"), key)
+			if(items[i].getAttribute("key") == key) {return items[i].getAttribute("val")}
+		}
+		return null
+	}
+
 	#select(key, val) {
 		const elId = ms.domElementIds.listItemPrefix + key
 		this.#_selected = [{[key]:val}]
 		this.#updateHeadBoxContent()
 		this.#$(elId).setAttribute("dropdown-item-checked","")
+	}
+
+	#deselectAll() {
+		var items = this.#$(ms.domElementIds.list).getElementsByTagName("li");
+		for (var i = 0; i < items.length; ++i) {
+			items[i].removeAttribute("dropdown-item-checked")
+		}
+		return null
 	}
 
 	#getClearButtonHtml() {

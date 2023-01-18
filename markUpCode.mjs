@@ -96,7 +96,7 @@ export default class MarkUpCode {
 		}
 
 		/* after the first child, which is a div with a grid */
-        [dropdown-item-checked] ::after {
+		[dropdown-item-checked] ::after {
 			position: absolute;
 			right: 0.8rem;
 			margin-top: 1px;
@@ -112,7 +112,7 @@ export default class MarkUpCode {
 			border-color: black;
 		}
 
-        </style>`
+		</style>`
 	}
 
 	// just for 1 row. a means to have a right column which is left aligned.
@@ -127,11 +127,11 @@ export default class MarkUpCode {
     static listItem(ms, key, val, path, displayKeys, fractions) {
 		const imgHtml =  MarkUpCode.image(path, key)
 		const keyHtml =  displayKeys ? `<div>${key}</div>` : ""
-        return `
-		<li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}' tabindex="0">
-			${MarkUpCode.grid(fractions, `<div>${imgHtml} ${val}</div>${keyHtml}`)}
-		</li>
-    	`
+		return `
+			<li id='${ms.domElementIds.listItemPrefix}${key}' key='${key}' val='${val}' tabindex="0">
+				${MarkUpCode.grid(fractions, `<div>${imgHtml} ${val}</div>${keyHtml}`)}
+			</li>
+		`
 	}
 
 	static headBoxContent(path, key, val, displayKey, fractions) {

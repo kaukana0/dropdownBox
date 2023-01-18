@@ -62,3 +62,8 @@ in multiselect only - when >1 items selected the box displays
     const selections = document.getElementById("selectCountry").selected
     // type: [{key:val}]  (same in both, single and multiselect mode)
 
+## setting selection
+
+    setSelectedByKey("someKey")
+
+note that only single select is implemented as of now
