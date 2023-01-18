@@ -179,8 +179,6 @@ class Element extends HTMLElement {
 	#getValueByKey(key) {
 		var items = this.#$(ms.domElementIds.list).getElementsByTagName("li");
 		for (var i = 0; i < items.length; ++i) {
-			console.log(items[i])
-			console.log(items[i].getAttribute("key"), key)
 			if(items[i].getAttribute("key") == key) {return items[i].getAttribute("val")}
 		}
 		return null
