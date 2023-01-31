@@ -24,6 +24,7 @@ class Element extends HTMLElement {
 	#_currentText	// textual representation of what's shown in headBox
 	#_isLocked		// if true, user can't influece selection and no callback will be invoked
 	#_orderedItems	// for instance ["European Union","Austria",...]
+	#_isInitialized
 
 	#$(elementId) {
 		return this.shadowRoot.getElementById(elementId)
@@ -32,6 +33,7 @@ class Element extends HTMLElement {
 	constructor() {
 		super()
 
+		this.#_isInitialized = false
 		this.#_isLocked = false
 		this.#_maxSelections = 10
 		this.#_orderedItems = []
@@ -39,27 +41,34 @@ class Element extends HTMLElement {
 		this.attachShadow({ mode: 'open' })
 		const tmp = MarkUpCode.getHtmlTemplate(MarkUpCode.mainElements(ms) + MarkUpCode.css(ms)).cloneNode(true)
 		this.shadowRoot.appendChild(tmp)
-
-		this.#$(ms.domElementIds.headBox).addEventListener('click', (el) => this.#toggleVisibility(el))
-		this.#$(ms.domElementIds.headBox).addEventListener('keydown', (e) => {
-			if(e.keyCode == 13 || e.keyCode == 32) {
-				this.#toggleVisibility(e)
-			}
-			if(e.keyCode == 27) {
-				this.#$(ms.domElementIds.list).style.display = "none"
-			}
-		})
-
-		this.#makeDismissable()
 	}
 
 	connectedCallback() {
-		this.#_imagePath = this.getAttribute('imagePath') || ""
-		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
-		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 10
-		this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
-		this.#_displayKeyInHeadbox = this.hasAttribute('displayKeyInHeadbox') ? true : false
-		this.#_fractions = this.hasAttribute('fractions') ? this.getAttribute('fractions') : 3
+		if(!this.#_isInitialized) {
+			this.#_imagePath = this.getAttribute('imagePath') || ""
+			this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
+			this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 10
+			this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
+			this.#_displayKeyInHeadbox = this.hasAttribute('displayKeyInHeadbox') ? true : false
+			this.#_fractions = this.hasAttribute('fractions') ? this.getAttribute('fractions') : 3
+
+			this.#$(ms.domElementIds.headBox).addEventListener('click', (ev) => this.#toggleVisibility(ev))
+			this.#$(ms.domElementIds.headBox).addEventListener('keydown', (e) => {
+				if(e.keyCode == 13 || e.keyCode == 32) {
+					this.#toggleVisibility(e)
+				}
+				if(e.keyCode == 27) {
+					this.#$(ms.domElementIds.list).style.display = "none"
+				}
+			})
+
+			this.#makeDismissable()
+			this.#_isInitialized = true
+		}
+	}
+
+	disconnectedCallback() {
+		console.log("dropdownBox: disconnected")
 	}
 
 	set data(val) {
@@ -349,7 +358,7 @@ class Element extends HTMLElement {
 		}
 	}
 
-	#toggleVisibility(el) {
+	#toggleVisibility(ev) {
 		const list = this.#$(ms.domElementIds.list)
 		const isCurrentlyVisible = list.style.display !== "block"
 
@@ -363,6 +372,7 @@ class Element extends HTMLElement {
 			// without this, it would stay down, with this, it's scrolled topmost
 		}
 
+		ev.stopPropagation()
 		// note: clicks anywhere else other than this component are handled under dismissability
 	}
 

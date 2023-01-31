@@ -39,9 +39,16 @@ in multiselect only - when >1 items selected the box displays
 
 ## setting it up
 
+    import "../dropdownBox/dropdownBox.mjs"
+
 ### setting data
 
-    document.getElementById("selectCountry").data = {EU27_2020: 'European Union', EA19: 'Euro area', BE: 'Belgium', BG: 'Bulgaria', CZ: 'Czechia'}
+    const d = new Map()
+    d.set("EU27_2020", 'European Union')
+    d.set("GR", 'Greece')
+    d.set("UG", 'Uganda')
+    document.getElementById("selectCountry").data = [d, ["GR"]]
+    // there will be a separation line after "Greece"
 
 ### setting callback
 
