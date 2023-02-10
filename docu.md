@@ -1,3 +1,19 @@
+# API Overview
+
+- set data
+- set callback
+- get selected
+- get selectedKeys
+- imagePath
+- set maxSelections
+- set selectedText
+- get selectedText
+- get currentText
+- setLocked()
+- setSelectedByKey()
+
+Note: Properties become attributes.
+
 # usage in html
 
     <dropdown-box id="selectCountry" imagePath="./components/dropdownBox/assets/countryFlagImages" multiselect maxSelections=7 displayKeys fractions=3 selectedText="countries selected"></dropdown-box>
@@ -50,10 +66,13 @@ in multiselect only - when >1 items selected the box displays
     document.getElementById("selectCountry").data = [d, ["GR"]]
     // there will be a separation line after "Greece"
 
+Note: triggers invocation of callback.
+
 ### setting callback
 
     document.getElementById("selectCountry").callback = (key,value) => doSomething(key,value)
 
+Notes:
 - invoked on user interaction
 - key/val is from clicked item (the same in both, single- and multiselect mode)
 
@@ -74,3 +93,11 @@ in multiselect only - when >1 items selected the box displays
     setSelectedByKey("someKey")
 
 note that only single select is implemented as of now
+
+## currentText
+
+the text currently displayed in the headbox
+
+## setLocked
+
+prohibit user from selecting/deselecting items.
