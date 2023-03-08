@@ -43,25 +43,27 @@ class Element extends HTMLElement {
 		this.shadowRoot.appendChild(tmp)
 	}
 
+	#registerEvents() {
+		this.#$(ms.domElementIds.headBox).addEventListener('click', (ev) => this.#toggleVisibility(ev))
+		this.#$(ms.domElementIds.headBox).addEventListener('keydown', (e) => {
+			if(e.keyCode == 13 || e.keyCode == 32) {
+				this.#toggleVisibility(e)
+			}
+			if(e.keyCode == 27) {
+				this.#$(ms.domElementIds.list).style.display = "none"
+			}
+		})		
+	}
+
 	connectedCallback() {
+		this.#_imagePath = this.getAttribute('imagePath') || ""
+		this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
+		this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 10
+		this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
+		this.#_displayKeyInHeadbox = this.hasAttribute('displayKeyInHeadbox') ? true : false
+		this.#_fractions = this.hasAttribute('fractions') ? this.getAttribute('fractions') : 3
 		if(!this.#_isInitialized) {
-			this.#_imagePath = this.getAttribute('imagePath') || ""
-			this.#_isMultiselect = this.hasAttribute('multiselect') ? true : false
-			this.#_maxSelections = this.hasAttribute('maxSelections') ? this.getAttribute('maxSelections') : 10
-			this.#_displayKeys = this.hasAttribute('displayKeys') ? true : false
-			this.#_displayKeyInHeadbox = this.hasAttribute('displayKeyInHeadbox') ? true : false
-			this.#_fractions = this.hasAttribute('fractions') ? this.getAttribute('fractions') : 3
-
-			this.#$(ms.domElementIds.headBox).addEventListener('click', (ev) => this.#toggleVisibility(ev))
-			this.#$(ms.domElementIds.headBox).addEventListener('keydown', (e) => {
-				if(e.keyCode == 13 || e.keyCode == 32) {
-					this.#toggleVisibility(e)
-				}
-				if(e.keyCode == 27) {
-					this.#$(ms.domElementIds.list).style.display = "none"
-				}
-			})
-
+			this.#registerEvents()	
 			this.#makeDismissable()
 			this.#_isInitialized = true
 		}
@@ -372,7 +374,8 @@ class Element extends HTMLElement {
 			// without this, it would stay down, with this, it's scrolled topmost
 		}
 
-		ev.stopPropagation()
+		//ev.stopPropagation()
+	
 		// note: clicks anywhere else other than this component are handled under dismissability
 	}
 
