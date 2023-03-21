@@ -44,15 +44,15 @@ class Element extends HTMLElement {
 	}
 
 	#registerEvents() {
-		this.#$(ms.domElementIds.headBox).addEventListener('click', (ev) => this.#toggleVisibility(ev))
-		this.#$(ms.domElementIds.headBox).addEventListener('keydown', (e) => {
-			if(e.keyCode == 13 || e.keyCode == 32) {
-				this.#toggleVisibility(e)
-			}
-			if(e.keyCode == 27) {
-				this.#$(ms.domElementIds.list).style.display = "none"
-			}
-		})		
+			this.#$(ms.domElementIds.headBox).addEventListener('click', (ev) => this.#toggleVisibility(ev))
+			this.#$(ms.domElementIds.headBox).addEventListener('keydown', (e) => {
+				if(e.keyCode == 13 || e.keyCode == 32) {
+					this.#toggleVisibility(e)
+				}
+				if(e.keyCode == 27) {
+					this.#$(ms.domElementIds.list).style.display = "none"
+				}
+		})
 	}
 
 	connectedCallback() {
