@@ -20,7 +20,7 @@ class Element extends HTMLElement {
 	#_displayKeys	// bool; from an attribute; for each entry, show it's on the right side in the area
 	#_displayKeyInHeadbox	// bool
 	#_fractions		// # of fractions of left side of the listitem list (relevent only for displayKeys. see docu.md)
-	#_selected		// [{key:val}] note: in singleselect, list contains 1 element
+	#_selected = new Map()
 	#_currentText	// textual representation of what's shown in headBox
 	#_isLocked		// if true, user can't influece selection and no callback will be invoked
 	#_orderedItems	// for instance ["European Union","Austria",...]
@@ -101,10 +101,6 @@ class Element extends HTMLElement {
 		return this.#_currentText
 	}
 
-	get selectedKeys() {
-		return this.#_selected.map((el) => Object.keys(el)[0])
-	}
-
 	static get observedAttributes() {
 		return ['data', 'callback', 'imagePath', 'multiselect', 'maxselections']
 	}
@@ -150,6 +146,19 @@ class Element extends HTMLElement {
 		}			
 	}
 
+	#stringHash(obj) {
+		let retVal = obj
+		if(typeof obj === "object") {
+			retVal=""
+			const str = JSON.stringify(obj)
+			let i=1
+			for(let ci in str) {
+				retVal += str.charCodeAt(ci)
+			}
+		}
+		return retVal
+	}
+
 	// note: the purpose of using requestAnimationFrame() here is to make sure 
 	// that an element - which we want to access - actually exists.
 	// seems that .innerHTML takes a while "asynchroneously"...
@@ -158,9 +167,9 @@ class Element extends HTMLElement {
 			for (const [key, val] of itemsMap.entries()) {
 
 				this.#_orderedItems.push(val)
-				this.#$(ms.domElementIds.list).innerHTML += MarkUpCode.listItem(ms, key, val, this.#_imagePath, this.#_displayKeys, this.#_fractions)
+				this.#$(ms.domElementIds.list).innerHTML += MarkUpCode.listItem(ms, this.#stringHash(key), val, this.#_imagePath, this.#_displayKeys, this.#_fractions)
 
-				const elId = ms.domElementIds.listItemPrefix + key
+				const elId = ms.domElementIds.listItemPrefix + this.#stringHash(key)
 				window.requestAnimationFrame(() => this.#$(elId).onclick = (ev) => {
 					this.#onListItemClick(key, val)
 					if(this.#_isMultiselect) {
@@ -173,7 +182,7 @@ class Element extends HTMLElement {
 					}
 				})
 	
-				if(this.#_selected === undefined) {	// initially (1st element)
+				if(this.#_selected.size === 0) {	// initially (1st element)
 					this.#select(key, val)
 					this.#invokeCallback(key, val)
 				}
@@ -196,8 +205,9 @@ class Element extends HTMLElement {
 	}
 
 	#select(key, val) {
-		const elId = ms.domElementIds.listItemPrefix + key
-		this.#_selected = [{[key]:val}]
+		const elId = ms.domElementIds.listItemPrefix + this.#stringHash(key)
+		this.#_selected.clear()
+		this.#_selected.set(key,val)
 		this.#updateHeadBoxContent()
 		this.#$(elId).setAttribute("dropdown-item-checked","")
 	}
@@ -243,10 +253,9 @@ class Element extends HTMLElement {
 	#updateHeadBoxContent() {
 		const that = this
 		
-		const selectedCount = this.#_selected.length
+		const selectedCount = this.#_selected.size
 		if(selectedCount === 1) {	// the case for singleselect OR multiselect w/ 1 element
-			const key = Object.keys(this.#_selected[0])[0]
-			const val = Object.values(this.#_selected[0])[0]
+			const [key,val] = this.#_selected.entries().next().value
 			action(val, MarkUpCode.headBoxContent(this.#_imagePath, key, val, this.#_displayKeyInHeadbox, this.#_fractions))
 		} else {
 			const text = `${selectedCount} ${this.getAttribute('selectedText') || "selected"}`
@@ -285,20 +294,18 @@ class Element extends HTMLElement {
 		}
 
 		function handleMultiSelectClick() {
-			const elId = ms.domElementIds.listItemPrefix + key
-			const idx = that.#_selected.findIndex((el)=> Object.keys(el)[0] === key)
-			const found = idx > -1
-			if(found) {
-				if(that.#_selected.length > 1) {
-					that.#_selected.splice(idx,1)	// remove
+			const elId = ms.domElementIds.listItemPrefix + that.#stringHash(key)
+			if(that.#_selected.has(key)) {
+				if(that.#_selected.size > 1) {
+					that.#_selected.delete(key)
 					that.#$(elId).removeAttribute("dropdown-item-checked")
 					action()
 				} else {
 					// nop (at least 1 has to be selected at all times)
 				}
 			} else {
-				if(that.#_selected.length < that.#_maxSelections) {
-					that.#_selected.push({[key]:val})	// add
+				if(that.#_selected.size < that.#_maxSelections) {
+					that.#_selected.set(key,val)
 					alignOrderOfSelectedItems()
 					that.#$(elId).setAttribute("dropdown-item-checked","")
 					action()
@@ -309,21 +316,24 @@ class Element extends HTMLElement {
 		}
 
 		function alignOrderOfSelectedItems() {		// ...to the order of dropdownBox items - and do it by value
-			that.#_selected.sort((e,f) => {
-				const a = that.#_orderedItems.findIndex(_e => _e === Object.entries(f)[0][1])
-				const b = that.#_orderedItems.findIndex(_e => _e === Object.entries(e)[0][1])
-				return a>b ? -1:1
-			})
+			that.#_selected = new Map([...that.#_selected.entries()].sort(
+				(e,f) => {
+					const a = that.#_orderedItems.findIndex(_e => _e === Object.entries(f)[0][1])
+					const b = that.#_orderedItems.findIndex(_e => _e === Object.entries(e)[0][1])
+					return a>b ? -1:1
+				}
+			))
 		}
 	
 		function handleSingleSelectClick() {
 			const elId = ms.domElementIds.listItemPrefix + key
-			const selectionChanged = that.#_selected[0] !== {[key]:val}
+			const selectionChanged = key !== that.#_selected.keys().next().value
 			if(selectionChanged) {
 				// deselect current
 				that.#getCurrentlySingleSelectedElement().removeAttribute("dropdown-item-checked")
 				// memorize and select new one
-				that.#_selected[0] = {[key]:val}
+				that.#_selected.clear()
+				that.#_selected.set(key,val)
 				that.#$(elId).setAttribute("dropdown-item-checked","")
 				action()
 			} else {
@@ -347,12 +357,12 @@ class Element extends HTMLElement {
 	}
 
 	#getCurrentlySingleSelectedElement() {
-		if(this.#_selected) {
+		if(this.#_selected.size>0) {
 			if(this.#_isMultiselect) {
 				console.warn("dropdownBox: not a single-select box")
 				return
 			} else {
-				const selecedElId = ms.domElementIds.listItemPrefix + Object.keys(this.#_selected[0])[0]
+				const selecedElId = ms.domElementIds.listItemPrefix + this.#_selected.keys().next().value
 				return this.#$(selecedElId)
 			}
 		} else {
@@ -368,7 +378,7 @@ class Element extends HTMLElement {
 
 		if(!this.#_isMultiselect && isCurrentlyVisible) {
 			const selEl = this.#getCurrentlySingleSelectedElement()
-			if(selEl) { selEl.scrollIntoView() }
+			//if(selEl) { selEl.scrollIntoView() }
 			// note: the list stores where it was last scrolled to.
 			// so, if for instance, you select the first item and scroll all the way down,
 			// without this, it would stay down, with this, it's scrolled topmost
