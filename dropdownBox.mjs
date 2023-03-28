@@ -70,7 +70,7 @@ class Element extends HTMLElement {
 	}
 
 	disconnectedCallback() {
-		console.log("dropdownBox: disconnected")
+		console.debug("dropdownBox: disconnected")
 	}
 
 	set data(val) {
