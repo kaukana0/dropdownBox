@@ -39,7 +39,7 @@ class Element extends HTMLElement {
 		this.#_orderedItems = []
 
 		this.attachShadow({ mode: 'open' })
-		const tmp = MarkUpCode.getHtmlTemplate(MarkUpCode.mainElements(ms) + MarkUpCode.css(ms)).cloneNode(true)
+		const tmp = MarkUpCode.getHtmlTemplate(MarkUpCode.mainElements(ms) + MarkUpCode.css(ms, 5)).cloneNode(true)
 		this.shadowRoot.appendChild(tmp)
 	}
 
@@ -101,8 +101,8 @@ class Element extends HTMLElement {
 		return this.#_currentText
 	}
 
-	static get observedAttributes() {
-		return ['data', 'callback', 'imagePath', 'multiselect', 'maxselections']
+	set zindex(val) {
+		this.setAttribute("zindex", val)
 	}
 
 	setLocked(isLocked) {
@@ -119,6 +119,10 @@ class Element extends HTMLElement {
 				console.warn(`dropdownBox: setSelectedByKey - key ${key} doesn't exist.`)
 			}
 		}
+	}
+
+	static get observedAttributes() {
+		return ['data', 'callback', 'imagePath', 'multiselect', 'maxselections', 'zindex']
 	}
 
 	attributeChangedCallback(name, oldVal, newVal) {
@@ -142,6 +146,11 @@ class Element extends HTMLElement {
 			if(newVal) {
 				this.#_maxSelections = parseInt(newVal)
 				this.#resetSelections()	// alternatively, implement removing excessive ones
+			}
+		}			
+		if(name === 'zindex') {
+			if(newVal) {
+				this.#$(ms.domElementIds.list).style.zIndex=newVal
 			}
 		}			
 	}

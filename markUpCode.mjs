@@ -14,7 +14,7 @@ export default class MarkUpCode {
 		`
 	}
 
-	static css(ms) {
+	static css(ms, zIndex) {
 		return `<style>
 		#${ms.domElementIds.headBox} {
 			position:relative;
@@ -63,9 +63,7 @@ export default class MarkUpCode {
 			background-color: #fff;
 			overflow: auto;
 			border: 1px solid rgba(0,0,0,1);
-			/* must be >0 because above other content.
-			   is arbitrarily set to 5 to allow 4 other levels below. */
-			z-index: 5;
+			z-index: ${zIndex};
 			max-height: 400px;
 			top: 1.8em;
 			margin-left: 0px;
